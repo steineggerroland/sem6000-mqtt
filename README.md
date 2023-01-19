@@ -1,4 +1,4 @@
-# MQTT for VOLTCRAFT SEM6000 [![Java CI with Maven](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/maven.yml/badge.svg)](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/maven.yml)
+# MQTT for VOLTCRAFT SEM6000 [![Java CI with Maven](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/maven.yml/badge.svg)](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/maven.yml) [![CodeQL](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/codeql.yml/badge.svg)](https://github.com/steineggerroland/sem6000-mqtt/actions/workflows/codeql.yml)
 
 This tool allows to control VOLTCRAFT SEM6000 BLE (bluetooth low energy) power measurement sockets via MQTT and therefore easy integration in the home automation of your choice!
 
