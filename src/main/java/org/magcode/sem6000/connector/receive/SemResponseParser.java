@@ -9,7 +9,7 @@ public class SemResponseParser {
   private static final Logger LOGGER = LoggerFactory.getLogger(SemResponseParser.class);
 
   public static SemResponse parseMessage(byte[] message) {
-    LOGGER.debug("Parsing sem6000 message '{}'", ByteUtils.byteArrayToHex(message));
+    LOGGER.atDebug().log(() -> String.format("Parsing sem6000 message '%s'", ByteUtils.byteArrayToHex(message)));
     if (message[0] != (byte) 0x0f) {
       return new IncompleteResponse(message);
     }

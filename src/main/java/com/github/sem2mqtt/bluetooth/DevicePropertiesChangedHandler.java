@@ -3,6 +3,7 @@ package com.github.sem2mqtt.bluetooth;
 import static java.util.Collections.emptySet;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -25,8 +26,8 @@ public class DevicePropertiesChangedHandler extends AbstractPropertiesChangedHan
 
   @Override
   public void handle(PropertiesChanged propertiesChanged) {
-    LOGGER.debug("Received properties changed ({}) for path '{}'.", propertiesChanged.toString(),
-        propertiesChanged.getPath());
+    Objects.requireNonNull(propertiesChanged);
+    LOGGER.debug("Received properties changed ({}) for path '{}'.", propertiesChanged, propertiesChanged.getPath());
     dbusListenerMap.getOrDefault(propertiesChanged.getPath(), emptySet())
         .forEach(dbusListener -> dbusListener.handle(propertiesChanged));
   }

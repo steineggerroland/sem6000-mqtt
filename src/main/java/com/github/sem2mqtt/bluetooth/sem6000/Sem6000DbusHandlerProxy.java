@@ -59,8 +59,8 @@ public class Sem6000DbusHandlerProxy implements DbusListener {
       System.arraycopy(data, 0, combinedData, buffer.length, data.length);
       SemResponse response = SemResponseParser.parseMessage(data);
       if (response.getType() != ResponseType.INCOMPLETE) {
-        LOGGER.debug("Received last part of message for  dbus path '{}': '{}'.", path,
-            ByteUtils.byteArrayToHex(combinedData));
+        LOGGER.atDebug().log(() -> String.format("Received last part of message for  dbus path '%s': '%s'.", path,
+            ByteUtils.byteArrayToHex(combinedData)));
         responseHandler.handleSem6000Response(response);
         buffer = null;
       } else {

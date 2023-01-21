@@ -66,7 +66,7 @@ public class BridgeConfigurationLoader {
   }
 
   private BridgeConfiguration loadFromProperties(File propertiesFile) {
-    LOGGER.info(String.format("Loading config from '%s'", propertiesFile.getName()));
+    LOGGER.atInfo().log(() -> String.format("Loading config from '%s'", propertiesFile.getName()));
     try {
       Properties props = new Properties();
       props.load(Files.newInputStream(propertiesFile.toPath()));
