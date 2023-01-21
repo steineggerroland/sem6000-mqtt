@@ -9,7 +9,7 @@ public class DataDayResponse extends SemResponse {
   private final int enToday;
 
   public DataDayResponse(byte[] values) {
-    super(ResponseType.dataday);
+    super(ResponseType.DATADAY);
     LocalDateTime now = LocalDateTime.now();
     int total = 0;
     int today = 0;

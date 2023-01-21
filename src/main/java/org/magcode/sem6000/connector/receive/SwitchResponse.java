@@ -5,7 +5,7 @@ public class SwitchResponse extends SemResponse {
   private final boolean success;
 
   public SwitchResponse(byte b) {
-    super(ResponseType.switchrelay);
+    super(ResponseType.SWITCHRELAY);
     this.success = b == (byte) 0x00;
   }
 

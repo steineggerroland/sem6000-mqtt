@@ -15,19 +15,19 @@ class SemResponseParserTest {
   @Test
   public void testSynTime() {
     SemResponse semResponse = createSyncTimeResponse();
-    assertEquals(ResponseType.synctime, semResponse.getType());
+    assertEquals(ResponseType.SYNCTIME, semResponse.getType());
   }
 
   @Test
   public void wrongOrderDay() {
     SemResponse semResponse = createUnknownSemResponse();
-    assertEquals(ResponseType.unknown, semResponse.getType());
+    assertEquals(ResponseType.UNKNOWN, semResponse.getType());
   }
 
   @Test
   public void dataDayTest() {
     SemResponse semResponse = createSemDayDataResponse();
-    assertEquals(ResponseType.dataday, semResponse.getType());
+    assertEquals(ResponseType.DATADAY, semResponse.getType());
     DataDayResponse dataResp = (DataDayResponse) semResponse;
     assertEquals(1638, dataResp.getLast24h());
     assertEquals(1638, dataResp.getToday());
@@ -36,7 +36,7 @@ class SemResponseParserTest {
   @Test
   public void testMeasure() {
     SemResponse semResponse = createMeasureResponse();
-    assertEquals(ResponseType.measure, semResponse.getType());
+    assertEquals(ResponseType.MEASURE, semResponse.getType());
     MeasurementResponse mRes = (MeasurementResponse) semResponse;
     assertEquals(234, mRes.getVoltage());
     assertEquals(11.464, mRes.getPower(), 0.001f);
@@ -45,19 +45,19 @@ class SemResponseParserTest {
   @Test
   public void testIncompleteDay1() {
     SemResponse semResponse = createSemResponseFor("0f330a0000000000000000000000000000000000");
-    assertEquals(ResponseType.incomplete, semResponse.getType());
+    assertEquals(ResponseType.INCOMPLETE, semResponse.getType());
   }
 
   @Test
   public void testIncompleteDay2() {
     SemResponse semResponse = createIncompleteResponse();
-    assertEquals(ResponseType.incomplete, semResponse.getType());
+    assertEquals(ResponseType.INCOMPLETE, semResponse.getType());
   }
 
   @Test
   public void testIncompleteDay3() {
     SemResponse semResponse = createSemResponseFor(
         "0f330a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bffff");
-    assertEquals(ResponseType.dataday, semResponse.getType());
+    assertEquals(ResponseType.DATADAY, semResponse.getType());
   }
 }

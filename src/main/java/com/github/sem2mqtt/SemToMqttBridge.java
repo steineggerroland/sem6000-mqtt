@@ -86,10 +86,10 @@ public class SemToMqttBridge {
     }
 
     switch (topic.getType()) {
-      case relay:
+      case RELAY:
         sendRelaySwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
         break;
-      case led:
+      case LED:
         sendLedSwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
         break;
       default:
@@ -125,30 +125,30 @@ public class SemToMqttBridge {
 
   private synchronized void handleSem6000Response(SemResponse response, Sem6000Config sem6000Config) {
     switch (response.getType()) {
-      case measure:
+      case MEASURE:
         MeasurementResponse mr = (MeasurementResponse) response;
         LOGGER.info("Forwarding sem6000 measurement '{}' to mqtt for device '{}'", mr, sem6000Config.getName());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/voltage", mr.getVoltage());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/power", mr.getPower());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/relay", mr.isPowerOn());
         break;
-      case dataday:
+      case DATADAY:
         DataDayResponse dr = (DataDayResponse) response;
         LOGGER.info("Forwarding daily data response '{}' to mqtt for device '{}'", dr, sem6000Config.getName());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/energytoday", dr.getToday());
         break;
-      case availability:
+      case AVAILABILITY:
         AvailabilityResponse ar = (AvailabilityResponse) response;
         // avoid notifying about online state too often
-        if (ar.getAvailability() != Availability.available || Objects.isNull(lastNotifiedAboutOnlineAvailabilityAt)
+        if (ar.getAvailability() != Availability.AVAILABLE || Objects.isNull(lastNotifiedAboutOnlineAvailabilityAt)
             || now().isAfter(
             lastNotifiedAboutOnlineAvailabilityAt.plus(sem6000Config.getUpdateInterval().toSeconds(), SECONDS))) {
           LOGGER.info("Forwarding sem6000 availability '{}' to mqtt for device '{}'", ar, sem6000Config.getName());
-          String payload = ar.getAvailability() == Availability.available ? "online" : "lost";
+          String payload = ar.getAvailability() == Availability.AVAILABLE ? "online" : "lost";
           mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/state", payload);
           // when notifying about online state, update last notification time
           lastNotifiedAboutOnlineAvailabilityAt =
-              ar.getAvailability() == Availability.available ? now() : lastNotifiedAboutOnlineAvailabilityAt;
+              ar.getAvailability() == Availability.AVAILABLE ? now() : lastNotifiedAboutOnlineAvailabilityAt;
         }
         break;
       default:

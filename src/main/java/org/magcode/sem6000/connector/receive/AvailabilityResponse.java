@@ -5,11 +5,11 @@ public class AvailabilityResponse extends SemResponse {
 	private final Availability availability;
 
 	public enum Availability {
-		lost, available
+		LOST, AVAILABLE
 	}
 
 	public AvailabilityResponse(Availability available) {
-		super(ResponseType.availability);
+		super(ResponseType.AVAILABILITY);
 		this.availability = available;
 	}
 
@@ -19,6 +19,6 @@ public class AvailabilityResponse extends SemResponse {
 
 	@Override
 	public String toString() {
-		return "Device is " + ((availability == Availability.available) ? "online" : "offline");
+		return "Device is " + ((availability == Availability.AVAILABLE) ? "online" : "offline");
 	}
 }

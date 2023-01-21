@@ -9,7 +9,7 @@ public class MeasurementResponse extends SemResponse {
   private boolean powerOn = false;
 
   public MeasurementResponse(byte[] data) {
-    super(ResponseType.measure);
+    super(ResponseType.MEASURE);
     if (data[0] == (byte) 0x01) {
       powerOn = true;
     }

@@ -65,11 +65,11 @@ class Sem6000ConnectionTest {
     when(sem6000DeviceMock.isConnected()).thenReturn(true);
     when(bluetoothConnectionManagerMock.findDeviceOrFail(anyString(), any())).thenReturn(sem6000DeviceMock);
     BluetoothGattService gattService = mock(BluetoothGattService.class, RETURNS_MOCKS);
-    when(sem6000DeviceMock.getGattServiceByUuid(Sem6000GattCharacteristic.Service.uuid)).thenReturn(gattService);
+    when(sem6000DeviceMock.getGattServiceByUuid(Sem6000GattCharacteristic.SERVICE.uuid)).thenReturn(gattService);
     writeService = mock(BluetoothGattCharacteristic.class, RETURNS_MOCKS);
-    when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.Write.uuid)).thenReturn(writeService);
+    when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.WRITE.uuid)).thenReturn(writeService);
     notifyService = mock(BluetoothGattCharacteristic.class, RETURNS_MOCKS);
-    when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.Notify.uuid)).thenReturn(notifyService);
+    when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.NOTIFY.uuid)).thenReturn(notifyService);
   }
 
   @Test
