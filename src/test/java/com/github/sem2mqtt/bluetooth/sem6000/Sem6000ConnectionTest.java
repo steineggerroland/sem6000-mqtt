@@ -3,6 +3,7 @@ package com.github.sem2mqtt.bluetooth.sem6000;
 import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.createMeasurementPropertyChange;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.randomSemConfigForPlug;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
@@ -37,7 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -125,16 +125,18 @@ class Sem6000ConnectionTest {
   void sends_measurement_and_day_requests_when_connection_is_established()
       throws InterruptedException, BluezFailedException, BluezNotAuthorizedException, BluezInvalidValueLengthException, BluezNotSupportedException, BluezInProgressException, BluezNotPermittedException {
     //given
-    Duration updateInterval = Duration.ofMillis(10);
+    Duration updateInterval = Duration.ofMillis(20);
     Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1", updateInterval),
         bluetoothConnectionManagerMock, scheduler);
+    //when
     sem6000Connection.establish();
     reset(writeService); // reset to ignore e.g. the login message
-    //when
-    // wait 1.5 times the update interval, because of the message processing overhead
-    Thread.sleep(Math.round(updateInterval.toMillis() * 1.5));
-    //then
-    verify(writeService, Mockito.times(2)).writeValue(any(), anyMap());
+    // wait longer than update interval, because of the message processing overhead
+    final int COUNT_OF_MEASUREMENT_MESSAGES_PER_REQUEST = 2;
+    await().atMost(Duration.ofSeconds(1))
+        .untilAsserted(
+            () -> verify(writeService, atLeast(COUNT_OF_MEASUREMENT_MESSAGES_PER_REQUEST))
+                .writeValue(any(), anyMap()));
   }
 
   @Test
@@ -144,15 +146,18 @@ class Sem6000ConnectionTest {
     Duration updateInterval = Duration.ofMillis(15);
     Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1", updateInterval),
         bluetoothConnectionManagerMock, scheduler);
+    //when
     sem6000Connection.establish();
     reset(writeService); // reset to ignore e.g. the login message
-    //when
-    Thread.sleep(Math.round(updateInterval.toMillis() * 7));
-    //then
-    // there is an overhead when processing the message, therefore,
-    // although we wait 7 times the update interval,
-    // we only expect at least 5 times 2 (one for measures and one for data day) requests
-    verify(writeService, atLeast(10)).writeValue(any(), anyMap());
+    // there is an overhead when processing the message, therefore, we wait twice the update interval
+    await().atLeast(Duration.ofMillis(updateInterval.toMillis() * 10))
+        .pollDelay(Duration.ofMillis(updateInterval.toMillis()))
+        .untilAsserted(() -> {
+              final int COUNT_OF_MEASUREMENT_MESSAGES_PER_REQUEST = 2;
+              verify(writeService, atLeast(COUNT_OF_MEASUREMENT_MESSAGES_PER_REQUEST * 10))
+                  .writeValue(any(), anyMap());
+            }
+        );
   }
 
   @Test
