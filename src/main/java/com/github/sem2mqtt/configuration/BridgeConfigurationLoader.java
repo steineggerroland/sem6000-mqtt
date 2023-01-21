@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.sem2mqtt.SemToMqttAppException;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.time.Duration;
@@ -67,21 +68,18 @@ public class BridgeConfigurationLoader {
 
   private BridgeConfiguration loadFromProperties(File propertiesFile) {
     LOGGER.atInfo().log(() -> String.format("Loading config from '%s'", propertiesFile.getName()));
+    InputStream inputStream = null;
     try {
       Properties props = new Properties();
-      props.load(Files.newInputStream(propertiesFile.toPath()));
+      inputStream = Files.newInputStream(propertiesFile.toPath());
+      props.load(inputStream);
       MqttConfig mqttConfig = new MqttConfig(props.getProperty("rootTopic"),
           props.getProperty("mqttServer"), props.getProperty("mqttClientId"),
           props.getProperty("mqttUsername"), props.getProperty("mqttPassword"));
       Set<Sem6000Config> semConfigs = new HashSet<>();
       for (int i = 1; i < 11; i++) {
         if (props.containsKey("sem" + i + ".mac")) {
-          semConfigs.add(new Sem6000Config(props.getProperty("sem" + i + ".mac"),
-              props.getProperty("sem" + i + ".pin"),
-              props.getProperty("sem" + i + ".name"),
-              Optional.ofNullable(props.getProperty("sem" + i + ".refresh"))
-                  .map(Integer::valueOf).map(
-                      Duration::ofSeconds).orElse(null)));
+          semConfigs.add(createConfigFromProperties(props, i));
         }
       }
 
@@ -90,6 +88,27 @@ public class BridgeConfigurationLoader {
     } catch (IOException e) {
       failOnReadError(e, propertiesFile.getName());
       throw new SemToMqttAppException("Unable to read properties file", e);
+    } finally {
+      safelyCloseFileInputStream(inputStream);
+    }
+  }
+
+  private Sem6000Config createConfigFromProperties(Properties props, int i) {
+    return new Sem6000Config(props.getProperty("sem" + i + ".mac"),
+        props.getProperty("sem" + i + ".pin"),
+        props.getProperty("sem" + i + ".name"),
+        Optional.ofNullable(props.getProperty("sem" + i + ".refresh"))
+            .map(Integer::valueOf).map(
+                Duration::ofSeconds).orElse(null));
+  }
+
+  private void safelyCloseFileInputStream(InputStream inputStream) {
+    try {
+      if (inputStream != null) {
+        inputStream.close();
+      }
+    } catch (IOException e) {
+      LOGGER.debug("Failed to close properties file.", e);
     }
   }
 
