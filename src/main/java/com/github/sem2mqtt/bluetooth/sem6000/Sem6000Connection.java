@@ -89,7 +89,6 @@ public class Sem6000Connection extends BluetoothConnection {
       this.safeSend(new SyncTimeCommand());
       handleConnected();
     } catch (SendingException | InterruptedException e) {
-      LOGGER.debug("Could not connect device with error: ", e);
       throw new ConnectException(e);
     }
   }
@@ -105,7 +104,6 @@ public class Sem6000Connection extends BluetoothConnection {
           new Sem6000DbusHandlerProxy(this::handleResponse));
     } catch (BluezFailedException | BluezInProgressException | BluezNotSupportedException |
              BluezNotPermittedException e) {
-      LOGGER.debug("Could not connect device, because starting notify failed: ", e);
       throw new ConnectException(e);
     }
   }
