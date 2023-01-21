@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +54,7 @@ import org.mockito.quality.Strictness;
 class SemToMqttBridgeTest {
 
   public static final String ROOT_TOPIC = "rootTopic";
-  public Scheduler schedulerMock = new Scheduler();
+  public Scheduler scheduler = new Scheduler();
   private MqttConnection mqttConnectionMock;
   private BluetoothConnectionManager bluetoothConnectionManager;
   private Sem6000Connection defaultSem6000ConnectionMock;
@@ -69,11 +70,16 @@ class SemToMqttBridgeTest {
     when(bluetoothConnectionManager.setupConnection(any())).thenReturn(defaultSem6000ConnectionMock);
   }
 
+  @AfterEach
+  void tearDown() {
+    scheduler.gracefullyShutdown();
+  }
+
   @Test
   void establishes_mqtt_connection_when_running() {
     //given
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, generateSemConfigs(1),
-        mqttConnectionMock, bluetoothConnectionManager, schedulerMock);
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
     //when
     semToMqttBridge.run();
     //then
@@ -85,7 +91,7 @@ class SemToMqttBridgeTest {
     //given
     Set<Sem6000Config> sem6000Configs = generateSemConfigs(4);
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, sem6000Configs, mqttConnectionMock,
-        bluetoothConnectionManager, schedulerMock);
+        bluetoothConnectionManager, scheduler);
     //when
     semToMqttBridge.run();
     //then
@@ -104,7 +110,7 @@ class SemToMqttBridgeTest {
     String plugName = "plug1";
     Sem6000Config plug = randomSemConfigForPlug(plugName);
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, Collections.singleton(plug),
-        mqttConnectionMock, bluetoothConnectionManager, schedulerMock);
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
     semToMqttBridge.run();
     //when
     Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
@@ -128,7 +134,7 @@ class SemToMqttBridgeTest {
     int countOfSem6000 = 4;
     Set<Sem6000Config> sem6000Configs = generateSemConfigs(countOfSem6000);
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, sem6000Configs, mqttConnectionMock,
-        bluetoothConnectionManager, schedulerMock);
+        bluetoothConnectionManager, scheduler);
     //when
     semToMqttBridge.run();
     //then
@@ -144,7 +150,7 @@ class SemToMqttBridgeTest {
   void fails_on_mqtt_problems_when_running() {
     //given
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, generateSemConfigs(1),
-        mqttConnectionMock, bluetoothConnectionManager, schedulerMock);
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
     //when
     doThrow(new RuntimeException()).when(mqttConnectionMock).establish();
     //then
@@ -157,7 +163,7 @@ class SemToMqttBridgeTest {
     int countOfSem6000 = 4;
     Set<Sem6000Config> sem6000Configs = generateSemConfigs(countOfSem6000);
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, sem6000Configs, mqttConnectionMock,
-        bluetoothConnectionManager, schedulerMock);
+        bluetoothConnectionManager, scheduler);
     Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
     when(bluetoothConnectionManager.setupConnection(any())).thenReturn(sem6000ConnectionMock);
     //when
@@ -173,7 +179,7 @@ class SemToMqttBridgeTest {
     //given
     String plugName = "plug1";
     SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, Set.of(randomSemConfigForPlug(plugName)),
-        mqttConnectionMock, bluetoothConnectionManager, schedulerMock);
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
     Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
     when(bluetoothConnectionManager.setupConnection(any())).thenReturn(sem6000ConnectionMock);
     //when
