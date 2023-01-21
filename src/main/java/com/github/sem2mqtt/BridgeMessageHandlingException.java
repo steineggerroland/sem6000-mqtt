@@ -5,7 +5,7 @@ import com.github.sem2mqtt.configuration.Sem6000Config;
 import com.github.sem2mqtt.mqtt.Sem6000MqttTopic;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 
-public class BridgeMessageHandlingException extends Throwable {
+public class BridgeMessageHandlingException extends Exception {
 
   public BridgeMessageHandlingException(String invalidTopic, String sem6000Name) {
     super(String.format("The mqtt topic '%s' is not valid for sem6000 '%s'.", invalidTopic, sem6000Name));
