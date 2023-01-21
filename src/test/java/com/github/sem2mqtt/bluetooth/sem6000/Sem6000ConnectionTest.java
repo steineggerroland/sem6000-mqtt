@@ -32,6 +32,7 @@ import org.bluez.exceptions.BluezNotAuthorizedException;
 import org.bluez.exceptions.BluezNotPermittedException;
 import org.bluez.exceptions.BluezNotSupportedException;
 import org.freedesktop.dbus.exceptions.DBusException;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,6 +71,11 @@ class Sem6000ConnectionTest {
     when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.Write.uuid)).thenReturn(writeService);
     notifyService = mock(BluetoothGattCharacteristic.class, RETURNS_MOCKS);
     when(gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.Notify.uuid)).thenReturn(notifyService);
+  }
+
+  @AfterEach
+  void tearDown() {
+    scheduler.gracefullyShutdown();
   }
 
   @Test
