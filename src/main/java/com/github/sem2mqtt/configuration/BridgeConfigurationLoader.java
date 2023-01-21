@@ -1,6 +1,7 @@
 package com.github.sem2mqtt.configuration;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.sem2mqtt.SemToMqttAppException;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -88,7 +89,7 @@ public class BridgeConfigurationLoader {
       return new BridgeConfiguration(mqttConfig, semConfigs);
     } catch (IOException e) {
       failOnReadError(e, propertiesFile.getName());
-      throw new RuntimeException(e);
+      throw new SemToMqttAppException("Unable to read properties file", e);
     }
   }
 
@@ -100,7 +101,7 @@ public class BridgeConfigurationLoader {
       return bridgeConfiguration;
     } catch (IOException e) {
       failOnReadError(e, yamlFile.getName());
-      throw new RuntimeException(e);
+      throw new SemToMqttAppException("Unable to read yaml file", e);
     }
   }
 
