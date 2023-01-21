@@ -10,7 +10,7 @@ import org.slf4j.LoggerFactory;
 
 public class BluetoothConnectionManager {
 
-  private Logger LOGGER = LoggerFactory.getLogger(BluetoothConnectionManager.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(BluetoothConnectionManager.class);
   private DeviceManager deviceManager;
   private DevicePropertiesChangedHandler dbusPathHandler;
 
