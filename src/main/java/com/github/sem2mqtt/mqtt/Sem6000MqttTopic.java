@@ -1,12 +1,18 @@
 package com.github.sem2mqtt.mqtt;
 
+import java.util.Arrays;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class Sem6000MqttTopic {
 
   public enum Type {
-    relay, unknown, led
+    RELAY, UNKNOWN, LED;
+
+    public static Type safeValueOf(String type) {
+      return Arrays.stream(Type.values()).filter(t -> t.name().equalsIgnoreCase(type)).findFirst()
+          .orElse(UNKNOWN);
+    }
   }
 
   private final String rootTopic;
@@ -22,9 +28,9 @@ public class Sem6000MqttTopic {
   public Type getType() {
     Matcher matcher = Pattern.compile(getMatcherForValidTopics()).matcher(topic);
     if (matcher.matches()) {
-      return Type.valueOf(matcher.group("type"));
+      return Type.safeValueOf(matcher.group("type"));
     } else {
-      return Type.unknown;
+      return Type.UNKNOWN;
     }
   }
 

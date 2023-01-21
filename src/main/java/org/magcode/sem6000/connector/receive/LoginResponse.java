@@ -5,7 +5,7 @@ public class LoginResponse extends SemResponse {
   private final boolean success;
 
   public LoginResponse(byte b) {
-    super(ResponseType.login);
+    super(ResponseType.LOGIN);
     this.success = b == (byte) 0x00;
   }
 

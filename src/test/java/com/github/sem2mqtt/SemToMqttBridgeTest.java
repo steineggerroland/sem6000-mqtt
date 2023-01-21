@@ -3,7 +3,7 @@ package com.github.sem2mqtt;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.generateSemConfigs;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.randomSemConfigForPlug;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.magcode.sem6000.connector.receive.AvailabilityResponse.Availability.available;
+import static org.magcode.sem6000.connector.receive.AvailabilityResponse.Availability.AVAILABLE;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createMeasureResponse;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createSemDayDataResponse;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createUnknownSemResponse;
@@ -99,7 +99,7 @@ class SemToMqttBridgeTest {
   @ParameterizedTest
   @MethodSource("mqttMessages")
   void forwards_mqtt_messages_to_sem6000_device_when_running(String message, String type, Command expectedCommand)
-      throws SendingException {
+      throws SendingException, BridgeMessageHandlingException {
     //given
     String plugName = "plug1";
     Sem6000Config plug = randomSemConfigForPlug(plugName);
@@ -187,6 +187,6 @@ class SemToMqttBridgeTest {
 
   static Stream<Arguments> sem6000Messages() {
     return Stream.of(Arguments.of(createMeasureResponse(), 3), Arguments.of(createSemDayDataResponse(), 1),
-        Arguments.of(new AvailabilityResponse(available), 1), Arguments.of(createUnknownSemResponse(), 0));
+        Arguments.of(new AvailabilityResponse(AVAILABLE), 1), Arguments.of(createUnknownSemResponse(), 0));
   }
 }

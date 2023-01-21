@@ -89,23 +89,21 @@ public class Sem6000Connection extends BluetoothConnection {
       this.safeSend(new SyncTimeCommand());
       handleConnected();
     } catch (SendingException | InterruptedException e) {
-      LOGGER.debug("Could not connect device with error: ", e);
       throw new ConnectException(e);
     }
   }
 
   private void loadGattCharacteristicsAndSubscribeChanges() throws ConnectException {
-    BluetoothGattService gattService = device.getGattServiceByUuid(Sem6000GattCharacteristic.Service.uuid);
-    writeService = gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.Write.uuid);
+    BluetoothGattService gattService = device.getGattServiceByUuid(Sem6000GattCharacteristic.SERVICE.uuid);
+    writeService = gattService.getGattCharacteristicByUuid(Sem6000GattCharacteristic.WRITE.uuid);
     notifyService = gattService.getGattCharacteristicByUuid(
-        Sem6000GattCharacteristic.Notify.uuid);
+        Sem6000GattCharacteristic.NOTIFY.uuid);
     try {
       notifyService.startNotify();
       connectionManager.subscribeToDbusPath(notifyService.getDbusPath(),
           new Sem6000DbusHandlerProxy(this::handleResponse));
     } catch (BluezFailedException | BluezInProgressException | BluezNotSupportedException |
              BluezNotPermittedException e) {
-      LOGGER.debug("Could not connect device, because starting notify failed: ", e);
       throw new ConnectException(e);
     }
   }
@@ -113,7 +111,7 @@ public class Sem6000Connection extends BluetoothConnection {
   protected void handleConnected() {
     LOGGER.info("Successfully connected to device {} ('{}')", sem6000Config.getName(), sem6000Config.getMac());
     reconnectScheduleName = null;
-    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.available)));
+    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.AVAILABLE)));
     measurementSchedulerName = scheduler.schedule(this::requestMeasurements,
         Schedules.fixedDelaySchedule(this.sem6000Config.getUpdateInterval())).name();
   }
@@ -130,14 +128,14 @@ public class Sem6000Connection extends BluetoothConnection {
 
   private void handleResponse(SemResponse semResponse) {
     subscribers.forEach(handler -> handler.handleSem6000Response(semResponse));
-    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.available)));
+    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.AVAILABLE)));
   }
 
   private void handleDisconnected() {
     LOGGER.info("Lost connection to device {} ('{}')", sem6000Config.getName(), sem6000Config.getMac());
     scheduler.cancel(measurementSchedulerName);
     measurementSchedulerName = null;
-    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.lost)));
+    subscribers.forEach(handler -> handler.handleSem6000Response(new AvailabilityResponse(Availability.LOST)));
     connectionManager.ignoreDbusPath(notifyService.getDbusPath());
     device = null;
     writeService = null;

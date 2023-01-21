@@ -1,5 +1,6 @@
 package com.github.sem2mqtt.mqtt;
 
+import com.github.sem2mqtt.SemToMqttAppException;
 import com.github.sem2mqtt.configuration.MqttConfig;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.MqttCallback;
@@ -35,9 +36,9 @@ public class MqttConnection implements MqttCallback {
       mqttClient.connect(mqttConnectOptions);
       LOGGER.info("Established connection to mqtt server");
     } catch (MqttSecurityException e) {
-      throw new RuntimeException("Not authorized to access mqtt server: ", e);
+      throw new SemToMqttAppException("Not authorized to access mqtt server: ", e);
     } catch (MqttException e) {
-      throw new RuntimeException("Failed to connect to mqtt server: ", e);
+      throw new SemToMqttAppException("Failed to connect to mqtt server: ", e);
     }
   }
 
@@ -73,7 +74,7 @@ public class MqttConnection implements MqttCallback {
       mqttClient.subscribe(topic, callback::handleMqttMessage);
       LOGGER.info("Subscribed to topic '{}'", topic);
     } catch (MqttException e) {
-      throw new RuntimeException(String.format("Failed to subscribe to mqtt topic %s: ", topic), e);
+      throw new SemToMqttAppException(String.format("Failed to subscribe to mqtt topic %s: ", topic), e);
     }
   }
 

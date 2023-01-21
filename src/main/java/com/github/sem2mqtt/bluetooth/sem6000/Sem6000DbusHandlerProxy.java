@@ -35,7 +35,7 @@ public class Sem6000DbusHandlerProxy implements DbusListener {
     Optional.ofNullable(propertiesChanged.getPropertiesChanged().get("Value")).map(Variant::getValue).filter(
         byte[].class::isInstance).map(byte[].class::cast).ifPresent(data -> {
       SemResponse responseFromData = SemResponseParser.parseMessage(data);
-      boolean isResponseComplete = responseFromData.getType() != ResponseType.incomplete;
+      boolean isResponseComplete = responseFromData.getType() != ResponseType.INCOMPLETE;
       if (isResponseComplete) {
         LOGGER.debug("Received message for dbus path '{}': '{}'.", propertiesChanged.getPath(),
             ByteUtils.byteArrayToHex(data));
@@ -58,9 +58,9 @@ public class Sem6000DbusHandlerProxy implements DbusListener {
     } else {
       System.arraycopy(data, 0, combinedData, buffer.length, data.length);
       SemResponse response = SemResponseParser.parseMessage(data);
-      if (response.getType() != ResponseType.incomplete) {
-        LOGGER.debug("Received last part of message for  dbus path '{}': '{}'.", path,
-            ByteUtils.byteArrayToHex(combinedData));
+      if (response.getType() != ResponseType.INCOMPLETE) {
+        LOGGER.atDebug().log(() -> String.format("Received last part of message for  dbus path '%s': '%s'.", path,
+            ByteUtils.byteArrayToHex(combinedData)));
         responseHandler.handleSem6000Response(response);
         buffer = null;
       } else {

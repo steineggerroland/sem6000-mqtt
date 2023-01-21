@@ -5,7 +5,7 @@ public class SyncTimeResponse extends SemResponse {
   private final boolean success;
 
   public SyncTimeResponse(byte b) {
-    super(ResponseType.synctime);
+    super(ResponseType.SYNCTIME);
     this.success = b == (byte) 0x00;
   }
 

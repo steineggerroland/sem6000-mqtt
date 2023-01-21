@@ -9,7 +9,7 @@ public abstract class BluetoothConnection {
 
   public abstract String getMacAddress();
 
-  public BluetoothConnection(BluetoothConnectionManager bluetoothConnectionManager, Scheduler scheduler) {
+  protected BluetoothConnection(BluetoothConnectionManager bluetoothConnectionManager, Scheduler scheduler) {
     this.connectionManager = bluetoothConnectionManager;
     this.scheduler = scheduler;
   }

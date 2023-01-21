@@ -67,74 +67,88 @@ public class SemToMqttBridge {
   }
 
   private MessageCallback createMessageCallbackFor(Sem6000Config sem6000Config, Sem6000Connection sem6000Connection) {
-    return (String topic, MqttMessage message) -> handleMqttMessage(
-        new Sem6000MqttTopic(rootTopic, topic, sem6000Config.getName()), message, sem6000Config, sem6000Connection);
+    return (String topic, MqttMessage message) -> {
+      try {
+        handleMqttMessage(
+            new Sem6000MqttTopic(rootTopic, topic, sem6000Config.getName()), message, sem6000Config, sem6000Connection);
+      } catch (BridgeMessageHandlingException e) {
+        LOGGER.warn("Could not process mqtt message '{}' to topic '{}' for device '{}'", topic,
+            message, sem6000Config.getName());
+      }
+    };
   }
 
   void handleMqttMessage(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
-      Sem6000Connection sem6000Connection) {
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
     LOGGER.debug("Received mqtt message '{}' to topic {} for device {}", message, topic, sem6000Config.getName());
-    if (topic.isValid()) {
-      switch (topic.getType()) {
-        case relay:
-          boolean plugOnOff = Boolean.parseBoolean(message.toString());
-          try {
-            sem6000Connection.safeSend(new SwitchCommand(plugOnOff));
-            // request measurement as switching probably influences the plugs consumption
-            sem6000Connection.safeSend(new MeasureCommand());
-            LOGGER.info("Received 'switch device {} {}'", sem6000Config.getName(), plugOnOff ? "on" : "off");
-          } catch (SendingException e) {
-            LOGGER.error("Failed to forward mqtt message '{}' to topic {} for {}", message, topic,
-                sem6000Config.getName());
-          }
-          break;
-        case led:
-          boolean ledOnOff = Boolean.parseBoolean(message.toString());
-          try {
-            sem6000Connection.safeSend(new LedCommand(ledOnOff));
-            LOGGER.info("Received 'switch device {} {}'", sem6000Config.getName(), ledOnOff ? "on" : "off");
-          } catch (SendingException e) {
-            LOGGER.error("Failed to forward mqtt message '{}' to topic {} for {}", message, topic,
-                sem6000Config.getName());
-          }
-          break;
-        default:
-          LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", topic,
-              message, sem6000Config.getName(), topic.getType());
-          break;
-      }
-    } else {
-      LOGGER.warn("Could not process mqtt message '{}' to topic '{}' for device '{}'", topic,
-          message, sem6000Config.getName());
+    if (!topic.isValid()) {
+      throw new BridgeMessageHandlingException(topic.toString(), sem6000Config.getName());
+    }
+
+    switch (topic.getType()) {
+      case RELAY:
+        sendRelaySwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
+        break;
+      case LED:
+        sendLedSwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
+        break;
+      default:
+        LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", topic,
+            message, sem6000Config.getName(), topic.getType());
+        break;
+    }
+  }
+
+  private void sendLedSwitchCommandToSem6000(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
+    boolean ledOnOff = Boolean.parseBoolean(message.toString());
+    try {
+      sem6000Connection.safeSend(new LedCommand(ledOnOff));
+      LOGGER.info("Forwarded 'switch led {}' to {}", sem6000Config.getName(), ledOnOff ? "on" : "off");
+    } catch (SendingException e) {
+      throw new BridgeMessageHandlingException(message, topic, sem6000Config, e);
+    }
+  }
+
+  private void sendRelaySwitchCommandToSem6000(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
+    boolean plugOnOff = Boolean.parseBoolean(message.toString());
+    try {
+      sem6000Connection.safeSend(new SwitchCommand(plugOnOff));
+      // request measurement as switching probably influences the plugs consumption
+      sem6000Connection.safeSend(new MeasureCommand());
+      LOGGER.info("Forwarded 'switch relay {}' to {}", sem6000Config.getName(), plugOnOff ? "on" : "off");
+    } catch (SendingException e) {
+      throw new BridgeMessageHandlingException(message, topic, sem6000Config, e);
     }
   }
 
   private synchronized void handleSem6000Response(SemResponse response, Sem6000Config sem6000Config) {
     switch (response.getType()) {
-      case measure:
+      case MEASURE:
         MeasurementResponse mr = (MeasurementResponse) response;
         LOGGER.info("Forwarding sem6000 measurement '{}' to mqtt for device '{}'", mr, sem6000Config.getName());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/voltage", mr.getVoltage());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/power", mr.getPower());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/relay", mr.isPowerOn());
         break;
-      case dataday:
+      case DATADAY:
         DataDayResponse dr = (DataDayResponse) response;
         LOGGER.info("Forwarding daily data response '{}' to mqtt for device '{}'", dr, sem6000Config.getName());
         mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/energytoday", dr.getToday());
         break;
-      case availability:
+      case AVAILABILITY:
         AvailabilityResponse ar = (AvailabilityResponse) response;
         // avoid notifying about online state too often
-        if (ar.getAvailability() != Availability.available || Objects.isNull(lastNotifiedAboutOnlineAvailabilityAt)
+        if (ar.getAvailability() != Availability.AVAILABLE || Objects.isNull(lastNotifiedAboutOnlineAvailabilityAt)
             || now().isAfter(
             lastNotifiedAboutOnlineAvailabilityAt.plus(sem6000Config.getUpdateInterval().toSeconds(), SECONDS))) {
           LOGGER.info("Forwarding sem6000 availability '{}' to mqtt for device '{}'", ar, sem6000Config.getName());
-          String payload = ar.getAvailability() == Availability.available ? "online" : "lost";
+          String payload = ar.getAvailability() == Availability.AVAILABLE ? "online" : "lost";
           mqttConnection.publish(rootTopic + "/" + sem6000Config.getName() + "/state", payload);
           // when notifying about online state, update last notification time
           lastNotifiedAboutOnlineAvailabilityAt =
-              ar.getAvailability() == Availability.available ? now() : lastNotifiedAboutOnlineAvailabilityAt;
+              ar.getAvailability() == Availability.AVAILABLE ? now() : lastNotifiedAboutOnlineAvailabilityAt;
         }
         break;
       default:

@@ -10,6 +10,10 @@ import org.magcode.sem6000.connector.send.Command;
 
 public class Sem6000DbusMessageTestHelper {
 
+  private Sem6000DbusMessageTestHelper() {
+    // no constructor for helper class
+  }
+
   public static PropertiesChanged createMeasurementPropertyChange(String dbusPath) throws DBusException {
     return new PropertiesChanged(dbusPath, "bt_interface1", createMeasurementPropertyChange(), emptyList());
   }

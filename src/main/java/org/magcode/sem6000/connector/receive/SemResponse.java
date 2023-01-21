@@ -4,7 +4,7 @@ public abstract class SemResponse {
 
   private final ResponseType responseType;
 
-  public SemResponse(ResponseType responseType) {
+  protected SemResponse(ResponseType responseType) {
     this.responseType = responseType;
   }
 

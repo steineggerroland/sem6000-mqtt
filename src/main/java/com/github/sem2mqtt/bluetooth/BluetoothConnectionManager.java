@@ -2,20 +2,17 @@ package com.github.sem2mqtt.bluetooth;
 
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
+import com.github.sem2mqtt.SemToMqttAppException;
 import com.github.sem2mqtt.bluetooth.DevicePropertiesChangedHandler.DbusListener;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import org.freedesktop.dbus.exceptions.DBusException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BluetoothConnectionManager {
 
-  private final Map<String, BluetoothConnection> macAddressToBluetoothConnections;
+  private static final Logger LOGGER = LoggerFactory.getLogger(BluetoothConnectionManager.class);
   private DeviceManager deviceManager;
   private DevicePropertiesChangedHandler dbusPathHandler;
-
-  public BluetoothConnectionManager() {
-    macAddressToBluetoothConnections = new ConcurrentHashMap<>();
-  }
 
   public void init() {
 
@@ -24,13 +21,13 @@ public class BluetoothConnectionManager {
       dbusPathHandler = new DevicePropertiesChangedHandler();
       deviceManager.registerPropertyHandler(dbusPathHandler);
     } catch (DBusException e) {
-      throw new RuntimeException("Failed to initialize bluetooth device manager", e);
+      throw new SemToMqttAppException("Failed to initialize bluetooth device manager", e);
     }
     deviceManager.scanForBluetoothDevices(10 * 1000);
   }
 
   public <T extends BluetoothConnection> T setupConnection(T bluetoothConnection) {
-    macAddressToBluetoothConnections.put(bluetoothConnection.getMacAddress(), bluetoothConnection);
+    LOGGER.debug("Registered bluetooth connection for mac address '{}'", bluetoothConnection.getMacAddress());
     return bluetoothConnection;
   }
 
