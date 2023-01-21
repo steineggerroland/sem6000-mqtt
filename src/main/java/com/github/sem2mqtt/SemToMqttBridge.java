@@ -67,45 +67,59 @@ public class SemToMqttBridge {
   }
 
   private MessageCallback createMessageCallbackFor(Sem6000Config sem6000Config, Sem6000Connection sem6000Connection) {
-    return (String topic, MqttMessage message) -> handleMqttMessage(
-        new Sem6000MqttTopic(rootTopic, topic, sem6000Config.getName()), message, sem6000Config, sem6000Connection);
+    return (String topic, MqttMessage message) -> {
+      try {
+        handleMqttMessage(
+            new Sem6000MqttTopic(rootTopic, topic, sem6000Config.getName()), message, sem6000Config, sem6000Connection);
+      } catch (BridgeMessageHandlingException e) {
+        LOGGER.warn("Could not process mqtt message '{}' to topic '{}' for device '{}'", topic,
+            message, sem6000Config.getName());
+      }
+    };
   }
 
   void handleMqttMessage(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
-      Sem6000Connection sem6000Connection) {
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
     LOGGER.debug("Received mqtt message '{}' to topic {} for device {}", message, topic, sem6000Config.getName());
-    if (topic.isValid()) {
-      switch (topic.getType()) {
-        case relay:
-          boolean plugOnOff = Boolean.parseBoolean(message.toString());
-          try {
-            sem6000Connection.safeSend(new SwitchCommand(plugOnOff));
-            // request measurement as switching probably influences the plugs consumption
-            sem6000Connection.safeSend(new MeasureCommand());
-            LOGGER.info("Received 'switch device {} {}'", sem6000Config.getName(), plugOnOff ? "on" : "off");
-          } catch (SendingException e) {
-            LOGGER.error("Failed to forward mqtt message '{}' to topic {} for {}", message, topic,
-                sem6000Config.getName());
-          }
-          break;
-        case led:
-          boolean ledOnOff = Boolean.parseBoolean(message.toString());
-          try {
-            sem6000Connection.safeSend(new LedCommand(ledOnOff));
-            LOGGER.info("Received 'switch device {} {}'", sem6000Config.getName(), ledOnOff ? "on" : "off");
-          } catch (SendingException e) {
-            LOGGER.error("Failed to forward mqtt message '{}' to topic {} for {}", message, topic,
-                sem6000Config.getName());
-          }
-          break;
-        default:
-          LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", topic,
-              message, sem6000Config.getName(), topic.getType());
-          break;
-      }
-    } else {
-      LOGGER.warn("Could not process mqtt message '{}' to topic '{}' for device '{}'", topic,
-          message, sem6000Config.getName());
+    if (!topic.isValid()) {
+      throw new BridgeMessageHandlingException(topic.toString(), sem6000Config.getName());
+    }
+
+    switch (topic.getType()) {
+      case relay:
+        sendRelaySwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
+        break;
+      case led:
+        sendLedSwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
+        break;
+      default:
+        LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", topic,
+            message, sem6000Config.getName(), topic.getType());
+        break;
+    }
+  }
+
+  private void sendLedSwitchCommandToSem6000(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
+    boolean ledOnOff = Boolean.parseBoolean(message.toString());
+    try {
+      sem6000Connection.safeSend(new LedCommand(ledOnOff));
+      LOGGER.info("Forwarded 'switch led {}' to {}", sem6000Config.getName(), ledOnOff ? "on" : "off");
+    } catch (SendingException e) {
+      throw new BridgeMessageHandlingException(message, topic, sem6000Config, e);
+    }
+  }
+
+  private void sendRelaySwitchCommandToSem6000(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
+      Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
+    boolean plugOnOff = Boolean.parseBoolean(message.toString());
+    try {
+      sem6000Connection.safeSend(new SwitchCommand(plugOnOff));
+      // request measurement as switching probably influences the plugs consumption
+      sem6000Connection.safeSend(new MeasureCommand());
+      LOGGER.info("Forwarded 'switch relay {}' to {}", sem6000Config.getName(), plugOnOff ? "on" : "off");
+    } catch (SendingException e) {
+      throw new BridgeMessageHandlingException(message, topic, sem6000Config, e);
     }
   }
 

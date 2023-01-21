@@ -99,7 +99,7 @@ class SemToMqttBridgeTest {
   @ParameterizedTest
   @MethodSource("mqttMessages")
   void forwards_mqtt_messages_to_sem6000_device_when_running(String message, String type, Command expectedCommand)
-      throws SendingException {
+      throws SendingException, BridgeMessageHandlingException {
     //given
     String plugName = "plug1";
     Sem6000Config plug = randomSemConfigForPlug(plugName);
