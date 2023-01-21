@@ -66,7 +66,8 @@ public class MqttConnection implements MqttCallback {
 
   @Override
   public void deliveryComplete(IMqttDeliveryToken token) {
-    LOGGER.debug("Message delivery to topic '{}' completed", String.join(", ", token.getTopics()));
+    LOGGER.atDebug()
+        .log(() -> String.format("Message delivery to topic '%s' completed", String.join(", ", token.getTopics())));
   }
 
   public void subscribe(String topic, MessageCallback callback) {
