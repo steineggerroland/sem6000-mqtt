@@ -79,7 +79,10 @@ class MqttConnectionTest {
     //when
     doThrow(MqttSecurityException.class).when(mqttClientMock).connect(any(MqttConnectOptions.class));
     //then
-    assertThatCode(() -> mqttConnection.establish()).isInstanceOf(SemToMqttAppException.class);
+    assertThatCode(() -> mqttConnection.establish()).isInstanceOf(SemToMqttAppException.class)
+        .hasMessageContaining("mqtt")
+        .hasMessageContaining("connect")
+        .hasMessageContaining("not authorized");
   }
 
   @Test
@@ -87,7 +90,9 @@ class MqttConnectionTest {
     //when
     doThrow(MqttException.class).when(mqttClientMock).connect(any(MqttConnectOptions.class));
     //then
-    assertThatCode(() -> mqttConnection.establish()).isInstanceOf(SemToMqttAppException.class);
+    assertThatCode(() -> mqttConnection.establish()).isInstanceOf(SemToMqttAppException.class)
+        .hasMessageContaining("mqtt")
+        .hasMessageContaining("connect");
   }
 
   @Test
@@ -98,6 +103,30 @@ class MqttConnectionTest {
     mqttConnection.subscribe(topic, mock(MessageCallback.class));
     //then
     verify(mqttClientMock).subscribe(eq(topic), any(IMqttMessageListener.class));
+  }
+
+  @Test
+  void crashes_app_when_cannot_subscribe_to_topics() throws MqttException {
+    //when
+    doThrow(MqttException.class).when(mqttClientMock).subscribe(anyString(), any(IMqttMessageListener.class));
+    //then
+    assertThatCode(() -> mqttConnection.subscribe("some/event", mock(MessageCallback.class)))
+        .isInstanceOf(SemToMqttAppException.class)
+        .hasMessageContaining("subscribe")
+        .hasMessageContaining("mqtt")
+        .hasMessageContaining("topic")
+        .hasMessageContaining("some/event");
+  }
+
+  @Test
+  void forwards_message_to_mqttclient_when_publishing_message() throws MqttException {
+    //given
+    mqttConnection.establish();
+    //when
+    mqttConnection.publish("some/topic", "Any kind of payload");
+    //then
+    verify(mqttClientMock).publish(eq("some/topic"), refEq("Any kind of object".getBytes(StandardCharsets.UTF_8)),
+        anyInt(), anyBoolean());
   }
 
   @Test
