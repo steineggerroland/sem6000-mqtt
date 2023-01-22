@@ -130,6 +130,18 @@ class MqttConnectionTest {
   }
 
   @Test
+  void fails_safely_when_publishing_fails() throws MqttException {
+    //given
+    mqttConnection.establish();
+    doThrow(MqttException.class).when(mqttClientMock).publish(eq("some/topic"), any(), anyInt(), anyBoolean());
+    //when
+    mqttConnection.publish("some/topic", "Any kind of payload");
+    //then
+    verify(mqttClientMock).publish(eq("some/topic"), refEq("Any kind of object".getBytes(StandardCharsets.UTF_8)),
+        anyInt(), anyBoolean());
+  }
+
+  @Test
   void invokes_callback_when_message_for_subscribed_topic_arrives() throws MqttException {
     //given
     String topic = "measurements/plug2/+/set";
