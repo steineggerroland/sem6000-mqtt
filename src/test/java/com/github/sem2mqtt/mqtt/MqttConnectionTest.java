@@ -2,9 +2,14 @@ package com.github.sem2mqtt.mqtt;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.refEq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -12,10 +17,16 @@ import static org.mockito.Mockito.verify;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import com.github.sem2mqtt.SemToMqttAppException;
 import com.github.sem2mqtt.configuration.MqttConfig;
 import com.github.sem2mqtt.mqtt.MqttConnection.MessageCallback;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
+import org.assertj.core.api.AbstractStringAssert;
+import org.assertj.core.api.InstanceOfAssertFactories;
+import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
@@ -109,6 +120,57 @@ class MqttConnectionTest {
     //then
     assertThatCode(() -> mqttConnection.deliveryComplete(null))
         .doesNotThrowAnyException();
+  }
+
+  @Test
+  void informs_about_connection_loss_when_mqtt_connection_is_lost() {
+    //given
+    Appender<ILoggingEvent> logAppenderMock = observeLogsOf(MqttConnection.class);
+    //when
+    mqttConnection.connectionLost(mock(Throwable.class));
+    //then
+    verify(logAppenderMock).doAppend(argThat(logs("connection", "lost")));
+  }
+
+  @Test
+  void informs_about_delivery_completion_when_mqtt_notifies() {
+    //given
+    Appender<ILoggingEvent> logAppenderMock = observeLogsOf(MqttConnection.class);
+    //when
+    mqttConnection.deliveryComplete(mock(IMqttDeliveryToken.class, RETURNS_MOCKS));
+    //then
+    verify(logAppenderMock).doAppend(argThat(logs("message", "sent")));
+  }
+
+  @Test
+  void informs_about_new_message_when_mqtt_message_arrived() {
+    //given
+    Appender<ILoggingEvent> logAppenderMock = observeLogsOf(MqttConnection.class);
+    //when
+    mqttConnection.messageArrived("some/topic", mock(MqttMessage.class));
+    //then
+    verify(logAppenderMock).doAppend(argThat(logs("received", "message", "some/topic")
+    ));
+  }
+
+  private Appender<ILoggingEvent> observeLogsOf(Class<?> classToObserveLogsOf) {
+    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+    Logger logger = loggerContext.getLogger(classToObserveLogsOf);
+    Appender<ILoggingEvent> logAppenderMock = mock(Appender.class);
+    logger.addAppender(logAppenderMock);
+    return logAppenderMock;
+  }
+
+  private ArgumentMatcher<ILoggingEvent> logs(String... expectedStringsInLog) {
+    return logArgument -> {
+      AbstractStringAssert<?> abstractStringAssert = assertThat(logArgument)
+          .asInstanceOf(InstanceOfAssertFactories.type(ILoggingEvent.class))
+          .extracting(ILoggingEvent::getFormattedMessage).asString();
+      for (String expectedMessage : expectedStringsInLog) {
+        abstractStringAssert.containsIgnoringCase(expectedMessage);
+      }
+      return true;
+    };
   }
 
   private ArgumentMatcher<IMqttMessageListener> whenCalledForwardsToCallback(MessageCallback callback) {

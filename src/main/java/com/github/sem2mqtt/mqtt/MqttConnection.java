@@ -36,7 +36,8 @@ public class MqttConnection implements MqttCallback {
       mqttClient.connect(mqttConnectOptions);
       LOGGER.info("Established connection to mqtt server");
     } catch (MqttSecurityException e) {
-      throw new SemToMqttAppException("Not authorized to access mqtt server: ", e);
+      throw new SemToMqttAppException(
+          "Could not connect, probably because client is not authorized to access mqtt server: ", e);
     } catch (MqttException e) {
       throw new SemToMqttAppException("Failed to connect to mqtt server: ", e);
     }
@@ -67,7 +68,7 @@ public class MqttConnection implements MqttCallback {
   @Override
   public void deliveryComplete(IMqttDeliveryToken token) {
     LOGGER.atDebug()
-        .log(() -> String.format("Message delivery to topic '%s' completed", String.join(", ", token.getTopics())));
+        .log(() -> String.format("Message to topic '%s' sent", String.join(", ", token.getTopics())));
   }
 
   public void subscribe(String topic, MessageCallback callback) {
