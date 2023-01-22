@@ -1,5 +1,6 @@
 package com.github.sem2mqtt.bluetooth.sem6000;
 
+import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.DBUS_PATH_01;
 import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.createMeasurementPropertyChange;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.randomSemConfigForPlug;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -18,6 +19,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.coreoz.wisp.Scheduler;
+import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattCharacteristic;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
@@ -85,7 +87,7 @@ class Sem6000ConnectionTest {
     Sem6000Config sem6000Config = randomSemConfigForPlug("plug1");
     //when
     Sem6000Connection sem6000Connection = new Sem6000Connection(sem6000Config,
-        new BluetoothConnectionManager(), scheduler);
+        new BluetoothConnectionManager(mock(DeviceManager.class)), scheduler);
     //then
     assertThat(sem6000Connection.getMacAddress()).isEqualTo(sem6000Connection.getMacAddress());
   }
@@ -172,14 +174,13 @@ class Sem6000ConnectionTest {
     //given
     Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1", Duration.ofSeconds(60)),
         bluetoothConnectionManagerMock, scheduler);
-    String dbusPath = "/org/bluez/bt1/dev_00_00_00_00_00_01/service000e/char0013";
-    when(notifyService.getDbusPath()).thenReturn(dbusPath);
+    when(notifyService.getDbusPath()).thenReturn(DBUS_PATH_01);
     sem6000Connection.establish();
     Sem6000ResponseHandler responseHandler = mock(Sem6000ResponseHandler.class);
-    verify(bluetoothConnectionManagerMock).subscribeToDbusPath(eq(dbusPath), dbusListenerCaptor.capture());
+    verify(bluetoothConnectionManagerMock).subscribeToDbusPath(eq(DBUS_PATH_01), dbusListenerCaptor.capture());
     //when
     sem6000Connection.subscribe(responseHandler);
-    dbusListenerCaptor.getValue().handle(createMeasurementPropertyChange(dbusPath));
+    dbusListenerCaptor.getValue().handle(createMeasurementPropertyChange(DBUS_PATH_01));
     //then
     verify(responseHandler, atLeastOnce()).handleSem6000Response(any());
   }

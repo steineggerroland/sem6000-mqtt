@@ -11,14 +11,17 @@ import org.slf4j.LoggerFactory;
 public class BluetoothConnectionManager {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(BluetoothConnectionManager.class);
-  private DeviceManager deviceManager;
-  private DevicePropertiesChangedHandler dbusPathHandler;
+  private final DeviceManager deviceManager;
+  private final DevicePropertiesChangedHandler dbusPathHandler;
+
+  public BluetoothConnectionManager(DeviceManager deviceManager) {
+    this.deviceManager = deviceManager;
+    this.dbusPathHandler = new DevicePropertiesChangedHandler();
+  }
 
   public void init() {
 
     try {
-      deviceManager = DeviceManager.createInstance(false);
-      dbusPathHandler = new DevicePropertiesChangedHandler();
       deviceManager.registerPropertyHandler(dbusPathHandler);
     } catch (DBusException e) {
       throw new SemToMqttAppException("Failed to initialize bluetooth device manager", e);

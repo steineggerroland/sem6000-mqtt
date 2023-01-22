@@ -4,6 +4,7 @@ import com.coreoz.wisp.Scheduler;
 import com.coreoz.wisp.SchedulerConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.sem2mqtt.bluetooth.BluetoothConnectionManager;
 import com.github.sem2mqtt.configuration.BridgeConfiguration;
 import com.github.sem2mqtt.configuration.BridgeConfigurationLoader;
@@ -12,6 +13,7 @@ import com.github.sem2mqtt.mqtt.MqttConnection;
 import org.eclipse.paho.client.mqttv3.MqttClient;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.persist.MemoryPersistence;
+import org.freedesktop.dbus.exceptions.DBusException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,6 +26,17 @@ public class SemToMqttApp {
     BridgeConfiguration bridgeConfiguration = loadBridgeConfiguration(args);
     MqttConnection mqttConnection;
     MqttConfig mqttConfig = bridgeConfiguration.getMqttConfig();
+    mqttConnection = initializeMqttConnection(mqttConfig);
+    Scheduler scheduler = new Scheduler(SchedulerConfig.builder().maxThreads(4).build());
+    BluetoothConnectionManager bluetoothConnectionManager = initializeBluetoothConnectionManager();
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(mqttConfig.getRootTopic(),
+        bridgeConfiguration.getSemConfigs(), mqttConnection, bluetoothConnectionManager, scheduler);
+
+    semToMqttBridge.run();
+  }
+
+  private static MqttConnection initializeMqttConnection(MqttConfig mqttConfig) {
+    MqttConnection mqttConnection;
     MqttClient mqttClient;
     try {
       mqttClient = new MqttClient(mqttConfig.getUrl(), mqttConfig.getClientId(), new MemoryPersistence());
@@ -31,11 +44,18 @@ public class SemToMqttApp {
     } catch (MqttException e) {
       throw new SemToMqttAppException("Failed to set up mqtt client: ", e);
     }
-    Scheduler scheduler = new Scheduler(SchedulerConfig.builder().maxThreads(4).build());
-    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(mqttConfig.getRootTopic(),
-        bridgeConfiguration.getSemConfigs(), mqttConnection, new BluetoothConnectionManager(), scheduler);
+    return mqttConnection;
+  }
 
-    semToMqttBridge.run();
+  private static BluetoothConnectionManager initializeBluetoothConnectionManager() {
+    BluetoothConnectionManager bluetoothConnectionManager;
+    try {
+      bluetoothConnectionManager = new BluetoothConnectionManager(
+          DeviceManager.createInstance(false));
+    } catch (DBusException e) {
+      throw new SemToMqttAppException("Failed to set up bluetooth device: ", e);
+    }
+    return bluetoothConnectionManager;
   }
 
   private static BridgeConfiguration loadBridgeConfiguration(String[] args) {

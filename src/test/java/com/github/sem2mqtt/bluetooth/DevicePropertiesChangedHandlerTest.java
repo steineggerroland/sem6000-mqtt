@@ -1,5 +1,7 @@
 package com.github.sem2mqtt.bluetooth;
 
+import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.DBUS_PATH_01;
+import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.DBUS_PATH_02;
 import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.createMeasurementPropertyChange;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -17,10 +19,9 @@ class DevicePropertiesChangedHandlerTest {
     //given
     DevicePropertiesChangedHandler handler = new DevicePropertiesChangedHandler();
     DbusListener listenerMock = mock(DbusListener.class);
-    String dbusPath = "/org/bluez/bt1/dev_00_00_00_00_00_01/service000e/char0013";
-    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(dbusPath);
+    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(DBUS_PATH_01);
     //when
-    handler.subscribe(dbusPath, listenerMock);
+    handler.subscribe(DBUS_PATH_01, listenerMock);
     handler.handle(propertiesChangedEvent);
     //then
     verify(listenerMock).handle(propertiesChangedEvent);
@@ -31,11 +32,9 @@ class DevicePropertiesChangedHandlerTest {
     //given
     DevicePropertiesChangedHandler handler = new DevicePropertiesChangedHandler();
     DbusListener listenerMock = mock(DbusListener.class);
-    String dbusPath = "/org/bluez/bt1/dev_00_00_00_00_00_01/service000e/char0013";
-    String dbusPathOfDifferentDevice = "/org/bluez/bt1/dev_12_34_56_78_90_01/service000e/char0013";
-    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(dbusPath);
+    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(DBUS_PATH_01);
     //when
-    handler.subscribe(dbusPathOfDifferentDevice, listenerMock);
+    handler.subscribe(DBUS_PATH_02, listenerMock);
     handler.handle(propertiesChangedEvent);
     //then
     verifyNoInteractions(listenerMock);
@@ -46,11 +45,10 @@ class DevicePropertiesChangedHandlerTest {
     //given
     DevicePropertiesChangedHandler handler = new DevicePropertiesChangedHandler();
     DbusListener listenerMock = mock(DbusListener.class);
-    String dbusPath = "/org/bluez/bt1/dev_00_00_00_00_00_01/service000e/char0013";
-    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(dbusPath);
+    PropertiesChanged propertiesChangedEvent = createMeasurementPropertyChange(DBUS_PATH_01);
     //when
-    handler.subscribe(dbusPath, listenerMock);
-    handler.ignore(dbusPath);
+    handler.subscribe(DBUS_PATH_01, listenerMock);
+    handler.ignore(DBUS_PATH_01);
     handler.handle(propertiesChangedEvent);
     //then
     verifyNoInteractions(listenerMock);

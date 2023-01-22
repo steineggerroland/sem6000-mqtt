@@ -1,5 +1,7 @@
 package com.github.sem2mqtt.mqtt;
 
+import static com.github.sem2mqtt.ObservingLogTestHelper.logs;
+import static com.github.sem2mqtt.ObservingLogTestHelper.observeLogsOf;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.Answers.RETURNS_MOCKS;
@@ -24,8 +26,6 @@ import com.github.sem2mqtt.configuration.MqttConfig;
 import com.github.sem2mqtt.mqtt.MqttConnection.MessageCallback;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ThreadLocalRandom;
-import org.assertj.core.api.AbstractStringAssert;
-import org.assertj.core.api.InstanceOfAssertFactories;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
 import org.eclipse.paho.client.mqttv3.IMqttMessageListener;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -192,26 +192,6 @@ class MqttConnectionTest {
     //then
     verify(logAppenderMock).doAppend(argThat(logs("received", "message", "some/topic")
     ));
-  }
-
-  private Appender<ILoggingEvent> observeLogsOf(Class<?> classToObserveLogsOf) {
-    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    Logger logger = loggerContext.getLogger(classToObserveLogsOf);
-    Appender<ILoggingEvent> logAppenderMock = mock(Appender.class);
-    logger.addAppender(logAppenderMock);
-    return logAppenderMock;
-  }
-
-  private ArgumentMatcher<ILoggingEvent> logs(String... expectedStringsInLog) {
-    return logArgument -> {
-      AbstractStringAssert<?> abstractStringAssert = assertThat(logArgument)
-          .asInstanceOf(InstanceOfAssertFactories.type(ILoggingEvent.class))
-          .extracting(ILoggingEvent::getFormattedMessage).asString();
-      for (String expectedMessage : expectedStringsInLog) {
-        abstractStringAssert.containsIgnoringCase(expectedMessage);
-      }
-      return true;
-    };
   }
 
   private ArgumentMatcher<IMqttMessageListener> whenCalledForwardsToCallback(MessageCallback callback) {
