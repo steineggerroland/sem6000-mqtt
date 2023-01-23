@@ -7,8 +7,8 @@ import org.eclipse.paho.client.mqttv3.MqttMessage;
 
 public class BridgeMessageHandlingException extends Exception {
 
-  public BridgeMessageHandlingException(String invalidTopic, String sem6000Name) {
-    super(String.format("The mqtt topic '%s' is not valid for sem6000 '%s'.", invalidTopic, sem6000Name));
+  public BridgeMessageHandlingException(String invalidTopic) {
+    super(String.format("The mqtt topic '%s' is not valid.", invalidTopic));
   }
 
   public BridgeMessageHandlingException(MqttMessage message, Sem6000MqttTopic topic, Sem6000Config sem6000Config,

@@ -1,13 +1,19 @@
 package com.github.sem2mqtt;
 
+import static com.github.sem2mqtt.ObservingLogTestHelper.atLeastOneMatches;
+import static com.github.sem2mqtt.ObservingLogTestHelper.logs;
+import static com.github.sem2mqtt.ObservingLogTestHelper.observeLogsOf;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.generateSemConfigs;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.randomSemConfigForPlug;
+import static com.github.sem2mqtt.mqtt.Sem6000MqttTopic.Type.UNKNOWN;
+import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.magcode.sem6000.connector.receive.AvailabilityResponse.Availability.AVAILABLE;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createMeasureResponse;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createSemDayDataResponse;
 import static org.magcode.sem6000.connector.receive.SemResponseTestHelper.createUnknownSemResponse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.matches;
 import static org.mockito.ArgumentMatchers.refEq;
@@ -18,6 +24,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.Appender;
 import com.coreoz.wisp.Scheduler;
 import com.github.sem2mqtt.bluetooth.BluetoothConnectionManager;
 import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Connection;
@@ -28,7 +36,6 @@ import com.github.sem2mqtt.mqtt.MqttConnection;
 import com.github.sem2mqtt.mqtt.MqttConnection.MessageCallback;
 import com.github.sem2mqtt.mqtt.Sem6000MqttTopic;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Stream;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
@@ -109,7 +116,7 @@ class SemToMqttBridgeTest {
     //given
     String plugName = "plug1";
     Sem6000Config plug = randomSemConfigForPlug(plugName);
-    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, Collections.singleton(plug),
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, singleton(plug),
         mqttConnectionMock, bluetoothConnectionManager, scheduler);
     semToMqttBridge.run();
     //when
@@ -126,6 +133,27 @@ class SemToMqttBridgeTest {
         Arguments.of("false", "led", new LedCommand(false)),
         Arguments.of("true", "relay", new SwitchCommand(true)),
         Arguments.of("false", "relay", new SwitchCommand(false)));
+  }
+
+  @Test
+  void logs_when_message_is_not_processable() throws BridgeMessageHandlingException {
+    //given
+    String plugName = "plug1";
+    Sem6000Config plug = randomSemConfigForPlug(plugName);
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, singleton(plug),
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
+    semToMqttBridge.run();
+    Sem6000MqttTopic sem6000MqttTopic = mock(Sem6000MqttTopic.class);
+    when(sem6000MqttTopic.isValid()).thenReturn(true);
+    when(sem6000MqttTopic.getType()).thenReturn(UNKNOWN);
+    Appender<ILoggingEvent> logObserver = observeLogsOf(SemToMqttBridge.class);
+    //when
+    Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
+    semToMqttBridge.handleMqttMessage(
+        sem6000MqttTopic,
+        new MqttMessage("some message".getBytes(StandardCharsets.UTF_8)), plug, sem6000ConnectionMock);
+    //then
+    verify(logObserver, atLeastOneMatches()).doAppend(argThat(logs("ignoring", "unknown", "message")));
   }
 
   @Test
@@ -194,5 +222,61 @@ class SemToMqttBridgeTest {
   static Stream<Arguments> sem6000Messages() {
     return Stream.of(Arguments.of(createMeasureResponse(), 3), Arguments.of(createSemDayDataResponse(), 1),
         Arguments.of(new AvailabilityResponse(AVAILABLE), 1), Arguments.of(createUnknownSemResponse(), 0));
+  }
+
+  @Captor
+  ArgumentCaptor<MessageCallback> messageCallbackCaptor;
+
+  @Test
+  void fails_gracefully_when_topic_does_not_match() {
+    //given
+    String plugName = "plug1";
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, singleton(randomSemConfigForPlug(plugName)),
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
+    semToMqttBridge.run();
+    verify(mqttConnectionMock).subscribe(anyString(), messageCallbackCaptor.capture());
+    String invalidTopic = String.format("%s/%s/%s", ROOT_TOPIC, "wrong_plug_name", "led");
+    Appender<ILoggingEvent> logObserver = observeLogsOf(SemToMqttBridge.class);
+    //when
+    messageCallbackCaptor.getValue()
+        .handleMqttMessage(invalidTopic, new MqttMessage("any message".getBytes(StandardCharsets.UTF_8)));
+    //then
+    verify(logObserver, atLeastOneMatches()).doAppend(argThat(logs("failed", "process", "message", invalidTopic)));
+  }
+
+  @Test
+  void fails_forward_when_led_command_fails() throws SendingException {
+    //given
+    String plugName = "plug1";
+    Sem6000Config sem6000Config = randomSemConfigForPlug(plugName);
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, singleton(sem6000Config),
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
+    semToMqttBridge.run();
+    //when
+    Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
+    doThrow(SendingException.class).when(sem6000ConnectionMock).safeSend(any(LedCommand.class));
+    //then
+    assertThatCode(() -> semToMqttBridge.handleMqttMessage(
+        new Sem6000MqttTopic(ROOT_TOPIC, String.format("%s/%s/%s", ROOT_TOPIC, plugName, "led"), plugName),
+        new MqttMessage("on".getBytes(StandardCharsets.UTF_8)), sem6000Config, sem6000ConnectionMock)).isInstanceOf(
+        BridgeMessageHandlingException.class).hasMessageContainingAll("Failed", "forward", plugName);
+  }
+
+  @Test
+  void fails_forward_when_relay_command_fails() throws SendingException {
+    //given
+    String plugName = "plug1";
+    Sem6000Config sem6000Config = randomSemConfigForPlug(plugName);
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, singleton(sem6000Config),
+        mqttConnectionMock, bluetoothConnectionManager, scheduler);
+    semToMqttBridge.run();
+    //when
+    Sem6000Connection sem6000ConnectionMock = mock(Sem6000Connection.class);
+    doThrow(SendingException.class).when(sem6000ConnectionMock).safeSend(any(SwitchCommand.class));
+    //then
+    assertThatCode(() -> semToMqttBridge.handleMqttMessage(
+        new Sem6000MqttTopic(ROOT_TOPIC, String.format("%s/%s/%s", ROOT_TOPIC, plugName, "relay"), plugName),
+        new MqttMessage("on".getBytes(StandardCharsets.UTF_8)), sem6000Config, sem6000ConnectionMock)).isInstanceOf(
+        BridgeMessageHandlingException.class).hasMessageContainingAll("Failed", "forward", plugName);
   }
 }

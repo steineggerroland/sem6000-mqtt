@@ -72,17 +72,18 @@ public class SemToMqttBridge {
         handleMqttMessage(
             new Sem6000MqttTopic(rootTopic, topic, sem6000Config.getName()), message, sem6000Config, sem6000Connection);
       } catch (BridgeMessageHandlingException e) {
-        LOGGER.warn("Could not process mqtt message '{}' to topic '{}' for device '{}'", topic,
-            message, sem6000Config.getName());
+        LOGGER.atDebug().log("Failed to process mqtt message '{}' to topic '{}' for device '{}': {}", topic,
+            message, sem6000Config.getName(), e.getMessage());
       }
     };
   }
 
   void handleMqttMessage(Sem6000MqttTopic topic, MqttMessage message, Sem6000Config sem6000Config,
       Sem6000Connection sem6000Connection) throws BridgeMessageHandlingException {
-    LOGGER.debug("Received mqtt message '{}' to topic {} for device {}", message, topic, sem6000Config.getName());
+    LOGGER.atDebug()
+        .log("Received mqtt message '{}' to topic {} for device {}", message, topic, sem6000Config.getName());
     if (!topic.isValid()) {
-      throw new BridgeMessageHandlingException(topic.toString(), sem6000Config.getName());
+      throw new BridgeMessageHandlingException(topic.toString());
     }
 
     switch (topic.getType()) {
@@ -93,8 +94,8 @@ public class SemToMqttBridge {
         sendLedSwitchCommandToSem6000(topic, message, sem6000Config, sem6000Connection);
         break;
       default:
-        LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", topic,
-            message, sem6000Config.getName(), topic.getType());
+        LOGGER.warn("Ignoring mqtt message '{}' to topic '{}' for device '{}' and unknown type {}", message, topic,
+            sem6000Config.getName(), topic.getType());
         break;
     }
   }
