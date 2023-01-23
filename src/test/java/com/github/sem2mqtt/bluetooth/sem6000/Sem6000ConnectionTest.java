@@ -4,6 +4,7 @@ import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper
 import static com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusMessageTestHelper.createMeasurementPropertyChange;
 import static com.github.sem2mqtt.configuration.Sem6000ConfigTestHelper.randomSemConfigForPlug;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.Answers.RETURNS_MOCKS;
 import static org.mockito.ArgumentMatchers.any;
@@ -12,6 +13,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
@@ -39,6 +41,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.magcode.sem6000.connector.send.MeasureCommand;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -185,4 +188,55 @@ class Sem6000ConnectionTest {
     verify(responseHandler, atLeastOnce()).handleSem6000Response(any());
   }
 
+  @Test
+  void resets_state_when_message_cannot_be_sent()
+      throws SendingException, BluezFailedException, BluezNotAuthorizedException, BluezInvalidValueLengthException, BluezNotSupportedException, BluezInProgressException, BluezNotPermittedException {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    sem6000Connection.establish();
+    //when
+    when(sem6000DeviceMock.isConnected()).thenReturn(false);
+    //then
+    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+        .isInstanceOf(SendingException.class)
+        .hasMessageContaining("not connected");
+    assertThat(sem6000Connection.isEstablished()).isFalse();
+  }
+
+  @Test
+  void reconnects_when_connection_is_lost() {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    sem6000Connection.establish();
+    Duration reconnectDelay = Duration.ofMillis(20);
+    sem6000Connection.setReconnectDelay(reconnectDelay);
+    when(sem6000DeviceMock.isConnected()).thenReturn(false);
+    //when
+    reset(sem6000DeviceMock);
+    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+        .isInstanceOf(SendingException.class)
+        .hasMessageContaining("not connected");
+    //then
+    await().untilAsserted(() -> verify(sem6000DeviceMock, atLeastOnce()).connect());
+  }
+
+  @Test
+  void fails_with_sending_exception_when_bluetooth_exception_occurs()
+      throws SendingException, BluezFailedException, BluezNotAuthorizedException, BluezInvalidValueLengthException, BluezNotSupportedException, BluezInProgressException, BluezNotPermittedException {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    sem6000Connection.establish();
+    //when
+    doThrow(BluezFailedException.class).when(writeService).writeValue(any(), anyMap());
+    //then
+    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+        .isInstanceOf(SendingException.class)
+        .hasMessageContainingAll("Failed", "send", "message");
+  }
 }

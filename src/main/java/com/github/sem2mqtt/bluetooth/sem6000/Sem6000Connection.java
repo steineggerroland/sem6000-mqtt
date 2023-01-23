@@ -38,6 +38,7 @@ public class Sem6000Connection extends BluetoothConnection {
 
   private static final Logger LOGGER = LoggerFactory.getLogger(Sem6000Connection.class);
   private static final Duration RECONNECT_DELAY = Duration.ofSeconds(60);
+  private Duration reconnectDelay = RECONNECT_DELAY;
   private final Sem6000Config sem6000Config;
   private BluetoothDevice device;
   private BluetoothGattCharacteristic writeService;
@@ -71,10 +72,13 @@ public class Sem6000Connection extends BluetoothConnection {
       LOGGER.warn("General exception, device {} is not connected properly. Scheduling reconnect. ",
           this.sem6000Config.getName());
       scheduleReconnect();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      scheduleReconnect();
     }
   }
 
-  private void connectToDevice() throws ConnectException {
+  private void connectToDevice() throws ConnectException, InterruptedException {
     device = connectionManager.findDeviceOrFail(sem6000Config.getMac(), new ConnectException("Could not find device."));
     if (!device.connect()) {
       throw new ConnectException("Could not connect to device.");
@@ -88,7 +92,7 @@ public class Sem6000Connection extends BluetoothConnection {
       Thread.sleep(200);
       this.safeSend(new SyncTimeCommand());
       handleConnected();
-    } catch (SendingException | InterruptedException e) {
+    } catch (SendingException e) {
       throw new ConnectException(e);
     }
   }
@@ -151,7 +155,11 @@ public class Sem6000Connection extends BluetoothConnection {
       LOGGER.warn("Failed to connect to device {} in attempt {}. Rescheduling reconnect.", sem6000Config.getName(),
           attempt);
       reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
-          executeOnce(fixedDelaySchedule(RECONNECT_DELAY))).name();
+          executeOnce(fixedDelaySchedule(reconnectDelay))).name();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
+          executeOnce(fixedDelaySchedule(reconnectDelay))).name();
     }
   }
 
@@ -184,12 +192,16 @@ public class Sem6000Connection extends BluetoothConnection {
     if (Objects.isNull(reconnectScheduleName)) {
       LOGGER.debug("Scheduling reconnect for device {}.", sem6000Config.getName());
       reconnectScheduleName = scheduler.schedule(() -> reconnect(0),
-              executeOnce(fixedDelaySchedule(RECONNECT_DELAY)))
+              executeOnce(fixedDelaySchedule(reconnectDelay)))
           .name();
     }
   }
 
   public void subscribe(Sem6000ResponseHandler responseHandler) {
     subscribers.add(responseHandler);
+  }
+
+  public void setReconnectDelay(Duration reconnectDelay) {
+    this.reconnectDelay = reconnectDelay;
   }
 }
