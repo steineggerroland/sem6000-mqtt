@@ -10,8 +10,14 @@ import org.magcode.sem6000.connector.send.Command;
 
 public class Sem6000DbusMessageTestHelper {
 
-  public static final String DBUS_PATH_01 = "/org/bluez/bt1/dev_00_00_00_00_00_01/service000e/char0013";
-  public static final String DBUS_PATH_02 = "/org/bluez/bt1/dev_00_00_00_00_00_02/service000e/char0013";
+  public static final String DBUS_PATH_01 = getDbusPathFor("bt1", "00_00_00_00_00_01", "service000e/char0013");
+  public static final String DBUS_PATH_02 = getDbusPathFor("bt1", "00_00_00_00_00_02", "service000e/char0013");
+
+  public static String getDbusPathFor(String bluetoothDevice, String macAddress, String service) {
+    return String.format("/org/bluez/%s/dev_%s/%s", bluetoothDevice, macAddress.replace(":", "_"), service);
+  }
+
+  ;
 
   private Sem6000DbusMessageTestHelper() {
     // no constructor for helper class
