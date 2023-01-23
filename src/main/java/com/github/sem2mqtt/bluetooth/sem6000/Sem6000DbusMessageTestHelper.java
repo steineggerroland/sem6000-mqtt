@@ -17,8 +17,6 @@ public class Sem6000DbusMessageTestHelper {
     return String.format("/org/bluez/%s/dev_%s/%s", bluetoothDevice, macAddress.replace(":", "_"), service);
   }
 
-  ;
-
   private Sem6000DbusMessageTestHelper() {
     // no constructor for helper class
   }
