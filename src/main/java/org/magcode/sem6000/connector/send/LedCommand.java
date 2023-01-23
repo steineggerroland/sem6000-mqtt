@@ -1,20 +1,22 @@
 package org.magcode.sem6000.connector.send;
 
+import com.github.sem2mqtt.bluetooth.sem6000.SendingException;
+
 public class LedCommand extends Command {
 
-	private final boolean state;
+  private final boolean state;
 
-	public LedCommand(boolean state) {
-		this.state = state;
-		byte[] payload = new byte[6];
-		payload[0] = (byte) 0x05;
-		if (state) {
-			payload[1] = (byte) 0x01;
-		} else {
-			payload[1] = (byte) 0x00;
-		}
-		payload[2] = (byte) 0x00;
-		payload[3] = (byte) 0x00;
+  public LedCommand(boolean state) throws SendingException {
+    this.state = state;
+    byte[] payload = new byte[6];
+    payload[0] = (byte) 0x05;
+    if (state) {
+      payload[1] = (byte) 0x01;
+    } else {
+      payload[1] = (byte) 0x00;
+    }
+    payload[2] = (byte) 0x00;
+    payload[3] = (byte) 0x00;
 		payload[4] = (byte) 0x00;
 		payload[5] = (byte) 0x00;
 

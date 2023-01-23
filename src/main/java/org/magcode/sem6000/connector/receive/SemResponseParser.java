@@ -10,6 +10,11 @@ public class SemResponseParser {
 
   public static SemResponse parseMessage(byte[] message) {
     LOGGER.atDebug().log(() -> String.format("Parsing sem6000 message '%s'", ByteUtils.byteArrayToHex(message)));
+    if (message[3] != (byte) 0x00) {
+      LOGGER.debug("Message is unknown.");
+      return new UnknownResponse();
+    }
+
     if (message[0] != (byte) 0x0f) {
       return new IncompleteResponse(message);
     }
@@ -19,11 +24,6 @@ public class SemResponseParser {
     if (!(actualLen - expectedLen - 4 == 0 || actualLen - expectedLen - 2 == 0)) {
       LOGGER.debug("Message is not complete. Expected length: {}, actual length: {}.", expectedLen, actualLen);
       return new IncompleteResponse(message);
-    }
-
-    if (message[3] != (byte) 0x00) {
-      LOGGER.debug("Message is unknown.");
-      return new UnknownResponse();
     }
 
     switch (message[2]) {

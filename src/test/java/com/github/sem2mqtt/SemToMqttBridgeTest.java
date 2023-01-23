@@ -128,7 +128,7 @@ class SemToMqttBridgeTest {
     verify(sem6000ConnectionMock).safeSend(refEq(expectedCommand));
   }
 
-  static Stream<Arguments> mqttMessages() {
+  static Stream<Arguments> mqttMessages() throws SendingException {
     return Stream.of(Arguments.of("true", "led", new LedCommand(true)),
         Arguments.of("false", "led", new LedCommand(false)),
         Arguments.of("true", "relay", new SwitchCommand(true)),

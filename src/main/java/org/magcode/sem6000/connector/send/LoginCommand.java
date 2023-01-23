@@ -1,8 +1,10 @@
 package org.magcode.sem6000.connector.send;
 
+import com.github.sem2mqtt.bluetooth.sem6000.SendingException;
+
 public class LoginCommand extends Command {
 
-	public LoginCommand(String pin) {
+	public LoginCommand(String pin) throws SendingException {
 		char[] pinA = pin.toCharArray();
 		Integer pos1 = Integer.valueOf(pinA[0] + "");
 		Integer pos2 = Integer.valueOf(pinA[1] + "");
