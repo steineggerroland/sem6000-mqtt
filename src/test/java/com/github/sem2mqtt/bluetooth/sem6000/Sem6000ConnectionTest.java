@@ -196,17 +196,18 @@ class Sem6000ConnectionTest {
         bluetoothConnectionManagerMock, scheduler);
     bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
     sem6000Connection.establish();
+    MeasureCommand command = new MeasureCommand();
     //when
     when(sem6000DeviceMock.isConnected()).thenReturn(false);
     //then
-    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+    assertThatCode(() -> sem6000Connection.safeSend(command))
         .isInstanceOf(SendingException.class)
         .hasMessageContaining("not connected");
     assertThat(sem6000Connection.isEstablished()).isFalse();
   }
 
   @Test
-  void reconnects_when_connection_is_lost() {
+  void reconnects_when_connection_is_lost() throws SendingException {
     //given
     Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
         bluetoothConnectionManagerMock, scheduler);
@@ -215,9 +216,10 @@ class Sem6000ConnectionTest {
     Duration reconnectDelay = Duration.ofMillis(20);
     sem6000Connection.setReconnectDelay(reconnectDelay);
     when(sem6000DeviceMock.isConnected()).thenReturn(false);
+    MeasureCommand command = new MeasureCommand();
     //when
     reset(sem6000DeviceMock);
-    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+    assertThatCode(() -> sem6000Connection.safeSend(command))
         .isInstanceOf(SendingException.class)
         .hasMessageContaining("not connected");
     //then
@@ -232,10 +234,11 @@ class Sem6000ConnectionTest {
         bluetoothConnectionManagerMock, scheduler);
     bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
     sem6000Connection.establish();
+    MeasureCommand command = new MeasureCommand();
     //when
     doThrow(BluezFailedException.class).when(writeService).writeValue(any(), anyMap());
     //then
-    assertThatCode(() -> sem6000Connection.safeSend(new MeasureCommand()))
+    assertThatCode(() -> sem6000Connection.safeSend(command))
         .isInstanceOf(SendingException.class)
         .hasMessageContainingAll("Failed", "send", "message");
   }
