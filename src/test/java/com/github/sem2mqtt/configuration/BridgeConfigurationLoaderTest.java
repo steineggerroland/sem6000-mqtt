@@ -37,19 +37,18 @@ class BridgeConfigurationLoaderTest {
     //when
     Set<Sem6000Config> semConfigs = loader.load("valid_test.yaml").getSemConfigs();
     //then
-    assertThat(semConfigs).hasSize(2);
-    assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:01");
-      assertThat(sem6000Config.getPin()).isEqualTo("0000");
-      assertThat(sem6000Config.getName()).isEqualTo("sem1");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(10));
-    });
-    assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:02");
-      assertThat(sem6000Config.getPin()).isEqualTo("1234");
-      assertThat(sem6000Config.getName()).isEqualTo("sem 2");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofMinutes(15));
-    });
+    assertThat(semConfigs).hasSize(2)
+        .anySatisfy(sem6000Config -> {
+          assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:01");
+          assertThat(sem6000Config.getPin()).isEqualTo("0000");
+          assertThat(sem6000Config.getName()).isEqualTo("sem1");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(10));
+        }).anySatisfy(sem6000Config -> {
+          assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:02");
+          assertThat(sem6000Config.getPin()).isEqualTo("1234");
+          assertThat(sem6000Config.getName()).isEqualTo("sem 2");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofMinutes(15));
+        });
   }
 
   @Test
@@ -65,11 +64,11 @@ class BridgeConfigurationLoaderTest {
     assertThat(mqttConfig.getUsername()).isNull();
     assertThat(mqttConfig.getPassword()).isNull();
 
-    assertThat(semConfigs).hasSize(1);
-    assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getPin()).isEqualTo("0000");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
-    });
+    assertThat(semConfigs).hasSize(1)
+        .anySatisfy(sem6000Config -> {
+          assertThat(sem6000Config.getPin()).isEqualTo("0000");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
+        });
   }
 
   @Test
@@ -90,17 +89,17 @@ class BridgeConfigurationLoaderTest {
     Set<Sem6000Config> semConfigs = loader.load("valid_test.properties").getSemConfigs();
     //then
     assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:01");
-      assertThat(sem6000Config.getPin()).isEqualTo("0000");
-      assertThat(sem6000Config.getName()).isEqualTo("sem1");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
-    });
-    assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:02");
-      assertThat(sem6000Config.getPin()).isEqualTo("1234");
-      assertThat(sem6000Config.getName()).isEqualTo("sem 2");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofMinutes(15));
-    });
+          assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:01");
+          assertThat(sem6000Config.getPin()).isEqualTo("0000");
+          assertThat(sem6000Config.getName()).isEqualTo("sem1");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
+        })
+        .anySatisfy(sem6000Config -> {
+          assertThat(sem6000Config.getMac()).isEqualTo("00:00:00:00:00:02");
+          assertThat(sem6000Config.getPin()).isEqualTo("1234");
+          assertThat(sem6000Config.getName()).isEqualTo("sem 2");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofMinutes(15));
+        });
   }
 
   @Test
@@ -116,10 +115,10 @@ class BridgeConfigurationLoaderTest {
     assertThat(mqttConfig.getUsername()).isNull();
     assertThat(mqttConfig.getPassword()).isNull();
 
-    assertThat(semConfigs).hasSize(1);
-    assertThat(semConfigs).anySatisfy(sem6000Config -> {
-      assertThat(sem6000Config.getPin()).isEqualTo("0000");
-      assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
-    });
+    assertThat(semConfigs).hasSize(1)
+        .anySatisfy(sem6000Config -> {
+          assertThat(sem6000Config.getPin()).isEqualTo("0000");
+          assertThat(sem6000Config.getUpdateInterval()).isEqualTo(Duration.ofSeconds(60));
+        });
   }
 }

@@ -6,6 +6,10 @@ import org.slf4j.LoggerFactory;
 
 public class SemResponseParser {
 
+  private SemResponseParser() {
+    //hide constructor of static helper class
+  }
+
   private static final Logger LOGGER = LoggerFactory.getLogger(SemResponseParser.class);
 
   public static SemResponse parseMessage(byte[] message) {

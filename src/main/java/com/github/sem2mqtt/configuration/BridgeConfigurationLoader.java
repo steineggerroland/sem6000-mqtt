@@ -113,7 +113,7 @@ public class BridgeConfigurationLoader {
   }
 
   private BridgeConfiguration loadFromYaml(File yamlFile) {
-    LOGGER.info(String.format("Loading config from '%s'", yamlFile.getName()));
+    LOGGER.atInfo().log(() -> String.format("Loading config from '%s'", yamlFile.getName()));
     try {
       BridgeConfiguration bridgeConfiguration = yamlMapper.readValue(yamlFile, BridgeConfiguration.class);
       LOGGER.info("Successfully loaded yaml config.");
@@ -125,7 +125,7 @@ public class BridgeConfigurationLoader {
   }
 
   private void failOnReadError(Exception e, String fileName) {
-    LOGGER.error(String.format("Failed to load configuration file '%s'.", fileName), e);
+    LOGGER.atError().log(() -> String.format("Failed to load configuration file '%s': %s.", fileName, e.getMessage()));
   }
 
   private File getClassPathFileFor(String filePath) {

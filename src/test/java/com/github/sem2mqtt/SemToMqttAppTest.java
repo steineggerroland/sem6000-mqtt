@@ -9,7 +9,8 @@ class SemToMqttAppTest {
 
   @Test()
   void fails_with_some_kind_of_app_exception_when_config_is_valid() {
-    assertThatCode(() -> SemToMqttApp.main(List.of("valid_test.yaml").toArray(new String[1])))
+    String[] args = List.of("valid_test.yaml").toArray(new String[1]);
+    assertThatCode(() -> SemToMqttApp.main(args))
         .isInstanceOf(SemToMqttAppException.class).hasMessageNotContaining("configuration");
   }
 

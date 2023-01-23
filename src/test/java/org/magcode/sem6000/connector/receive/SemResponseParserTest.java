@@ -16,7 +16,7 @@ import org.magcode.sem6000.connector.send.Command;
 class SemResponseParserTest {
 
   @Test
-  public void testSynTime() {
+  void testSynTime() {
     SemResponse semResponse = createSyncTimeResponse();
     assertEquals(ResponseType.SYNCTIME, semResponse.getType());
   }
@@ -49,13 +49,13 @@ class SemResponseParserTest {
   }
 
   @Test
-  public void wrongOrderDay() {
+  void wrongOrderDay() {
     SemResponse semResponse = createUnknownSemResponse();
     assertEquals(ResponseType.UNKNOWN, semResponse.getType());
   }
 
   @Test
-  public void dataDayTest() {
+  void dataDayTest() {
     SemResponse semResponse = createSemDayDataResponse();
     assertEquals(ResponseType.DATADAY, semResponse.getType());
     DataDayResponse dataResp = (DataDayResponse) semResponse;
@@ -64,7 +64,7 @@ class SemResponseParserTest {
   }
 
   @Test
-  public void testMeasure() {
+  void testMeasure() {
     SemResponse semResponse = createMeasureResponse();
     assertEquals(ResponseType.MEASURE, semResponse.getType());
     MeasurementResponse mRes = (MeasurementResponse) semResponse;
@@ -73,19 +73,19 @@ class SemResponseParserTest {
   }
 
   @Test
-  public void testIncompleteDay1() {
+  void testIncompleteDay1() {
     SemResponse semResponse = createSemResponseFor("0f330a0000000000000000000000000000000000");
     assertEquals(ResponseType.INCOMPLETE, semResponse.getType());
   }
 
   @Test
-  public void testIncompleteDay2() {
+  void testIncompleteDay2() {
     SemResponse semResponse = createIncompleteResponse();
     assertEquals(ResponseType.INCOMPLETE, semResponse.getType());
   }
 
   @Test
-  public void testIncompleteDay3() {
+  void testIncompleteDay3() {
     SemResponse semResponse = createSemResponseFor(
         "0f330a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000bffff");
     assertEquals(ResponseType.DATADAY, semResponse.getType());
