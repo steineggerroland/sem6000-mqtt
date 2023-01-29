@@ -36,7 +36,7 @@ public class BluetoothConnectionManager {
 
   public <T extends Exception> BluetoothDevice findDeviceOrFail(String macAddress, T e) throws T {
     return deviceManager.getDevices().stream()
-        .filter(bluetoothDevice -> bluetoothDevice.getAddress().equals(macAddress)).findFirst().orElseThrow(() -> e);
+        .filter(bluetoothDevice -> macAddress.equals(bluetoothDevice.getAddress())).findFirst().orElseThrow(() -> e);
   }
 
   public void subscribeToDbusPath(String dbusPath, DbusListener listener) {

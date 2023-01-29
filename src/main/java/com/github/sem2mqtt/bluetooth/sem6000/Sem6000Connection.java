@@ -151,13 +151,14 @@ public class Sem6000Connection extends BluetoothConnection {
     LOGGER.debug("Trying to connect to device {} in attempt {}.", this.sem6000Config.getName(), attempt);
     try {
       connectToDevice();
-    } catch (ConnectException e) {
-      LOGGER.warn("Failed to connect to device {} in attempt {}. Rescheduling reconnect.", sem6000Config.getName(),
-          attempt);
-      reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
-          executeOnce(fixedDelaySchedule(reconnectDelay))).name();
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
+      reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
+          executeOnce(fixedDelaySchedule(reconnectDelay))).name();
+    } catch (ConnectException | RuntimeException e) {
+      LOGGER.warn("Failed to connect to device {} in attempt {} with reason '{}'. Rescheduling reconnect.",
+          sem6000Config.getName(),
+          attempt, e.getMessage());
       reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
           executeOnce(fixedDelaySchedule(reconnectDelay))).name();
     }
@@ -170,7 +171,8 @@ public class Sem6000Connection extends BluetoothConnection {
     try {
       writeService.writeValue(command.getMessage(), emptyMap());
     } catch (BluezFailedException | BluezNotAuthorizedException | BluezInvalidValueLengthException |
-             BluezNotSupportedException | BluezInProgressException | BluezNotPermittedException e) {
+             BluezNotSupportedException | BluezInProgressException | BluezNotPermittedException |
+             RuntimeException e) {
       throw new SendingException(String.format("Failed to send bluetooth message to %s", this.sem6000Config.getName()),
           e);
     }

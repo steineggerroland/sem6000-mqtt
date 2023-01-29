@@ -227,6 +227,26 @@ class Sem6000ConnectionTest {
   }
 
   @Test
+  @MockitoSettings(strictness = Strictness.LENIENT)
+  void keeps_reconnecting_on_runtimeexception_during_reconnect()
+      throws Exception {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    Duration reconnectDelay = Duration.ofMillis(20);
+    sem6000Connection.setReconnectDelay(reconnectDelay);
+    doThrow(RuntimeException.class).when(bluetoothConnectionManagerMock)
+        .findDeviceOrFail(anyString(), any(Exception.class));
+    //when
+    reset(sem6000DeviceMock);
+    sem6000Connection.establish();
+    //then
+    await().untilAsserted(
+        () -> verify(bluetoothConnectionManagerMock, atLeast(4)).findDeviceOrFail(anyString(), any(Exception.class)));
+  }
+
+  @Test
   void fails_with_sending_exception_when_bluetooth_exception_occurs()
       throws SendingException, BluezFailedException, BluezNotAuthorizedException, BluezInvalidValueLengthException, BluezNotSupportedException, BluezInProgressException, BluezNotPermittedException {
     //given
@@ -237,6 +257,23 @@ class Sem6000ConnectionTest {
     MeasureCommand command = new MeasureCommand();
     //when
     doThrow(BluezFailedException.class).when(writeService).writeValue(any(), anyMap());
+    //then
+    assertThatCode(() -> sem6000Connection.safeSend(command))
+        .isInstanceOf(SendingException.class)
+        .hasMessageContainingAll("Failed", "send", "message");
+  }
+
+  @Test
+  void fails_with_sending_exception_when_runtime_exception_occurs_during_sending()
+      throws SendingException, BluezFailedException, BluezNotAuthorizedException, BluezInvalidValueLengthException, BluezNotSupportedException, BluezInProgressException, BluezNotPermittedException {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    sem6000Connection.establish();
+    MeasureCommand command = new MeasureCommand();
+    //when
+    doThrow(RuntimeException.class).when(writeService).writeValue(any(), anyMap());
     //then
     assertThatCode(() -> sem6000Connection.safeSend(command))
         .isInstanceOf(SendingException.class)
