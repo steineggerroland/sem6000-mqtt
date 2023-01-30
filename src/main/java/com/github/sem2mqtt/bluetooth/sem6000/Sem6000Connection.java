@@ -159,6 +159,7 @@ public class Sem6000Connection extends BluetoothConnection {
       LOGGER.warn("Failed to connect to device {} in attempt {} with reason '{}'. Rescheduling reconnect.",
           sem6000Config.getName(),
           attempt, e.getMessage());
+      LOGGER.debug("Reason:", e);
       reconnectScheduleName = scheduler.schedule(() -> reconnect(attempt + 1),
           executeOnce(fixedDelaySchedule(reconnectDelay))).name();
     }

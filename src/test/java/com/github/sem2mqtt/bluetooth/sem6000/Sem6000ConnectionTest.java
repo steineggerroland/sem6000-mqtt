@@ -19,6 +19,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.quality.Strictness.LENIENT;
 
 import com.coreoz.wisp.Scheduler;
 import com.github.hypfvieh.bluetooth.DeviceManager;
@@ -30,6 +31,7 @@ import com.github.sem2mqtt.bluetooth.DevicePropertiesChangedHandler.DbusListener
 import com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusHandlerProxy.Sem6000ResponseHandler;
 import com.github.sem2mqtt.configuration.Sem6000Config;
 import java.time.Duration;
+import java.util.stream.Stream;
 import org.bluez.exceptions.BluezFailedException;
 import org.bluez.exceptions.BluezInProgressException;
 import org.bluez.exceptions.BluezInvalidValueLengthException;
@@ -41,12 +43,14 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.magcode.sem6000.connector.send.MeasureCommand;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 class Sem6000ConnectionTest {
@@ -84,7 +88,7 @@ class Sem6000ConnectionTest {
   }
 
   @Test
-  @MockitoSettings(strictness = Strictness.LENIENT)
+  @MockitoSettings(strictness = LENIENT)
   void mac_matches_from_config_when_creating_connection() {
     //given
     Sem6000Config sem6000Config = randomSemConfigForPlug("plug1");
@@ -105,6 +109,30 @@ class Sem6000ConnectionTest {
     sem6000Connection.establish();
     //then
     verify(sem6000DeviceMock).connect();
+  }
+
+  @ParameterizedTest
+  @MethodSource("handledExceptions")
+  @MockitoSettings(strictness = LENIENT)
+  void reconnects_when_establishing_connection_errors(Class<RuntimeException> throwable) throws Exception {
+    //given
+    Sem6000Connection sem6000Connection = new Sem6000Connection(randomSemConfigForPlug("plug1"),
+        bluetoothConnectionManagerMock, scheduler);
+    bluetoothConnectionManagerMock.setupConnection(sem6000Connection);
+    sem6000Connection.setReconnectDelay(Duration.ofMillis(30));
+    when(bluetoothConnectionManagerMock.findDeviceOrFail(anyString(), any(Exception.class))).thenThrow(throwable);
+    //when
+    sem6000Connection.establish();
+    reset(bluetoothConnectionManagerMock);
+    //then
+    await().atMost(Duration.ofSeconds(1))
+        .untilAsserted(() -> verify(bluetoothConnectionManagerMock, atLeast(4)).findDeviceOrFail(anyString(),
+            any(Exception.class)));
+  }
+
+  static Stream<Arguments> handledExceptions() {
+    return Stream.of(Arguments.of(RuntimeException.class),
+        Arguments.of(ConnectException.class));
   }
 
   @Test
@@ -227,7 +255,7 @@ class Sem6000ConnectionTest {
   }
 
   @Test
-  @MockitoSettings(strictness = Strictness.LENIENT)
+  @MockitoSettings(strictness = LENIENT)
   void keeps_reconnecting_on_runtimeexception_during_reconnect()
       throws Exception {
     //given
