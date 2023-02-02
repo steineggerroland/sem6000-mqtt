@@ -1,7 +1,5 @@
 package com.github.sem2mqtt.bluetooth.timeflip;
 
-import static com.github.sem2mqtt.bluetooth.timeflip.GattCharacteristic.SERVICE_TIMEFLIP_UUID;
-
 import com.coreoz.wisp.Scheduler;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothDevice;
 import com.github.hypfvieh.bluetooth.wrapper.BluetoothGattService;
@@ -53,7 +51,7 @@ public class TimeflipConnection extends BluetoothConnection {
       device.getGattServices()
           .forEach(bluetoothGattService -> LOGGER.debug("{} {}", bluetoothGattService.getUuid(), bluetoothGattService));
 
-      BluetoothGattService timeFlipService = device.getGattServiceByUuid(SERVICE_TIMEFLIP_UUID.toLowerCase());
+      BluetoothGattService timeFlipService = device.getGattServiceByUuid(GattService.TIMEFLIP.uuid);
       timeFlipService.getGattCharacteristics()
           .forEach(bluetoothGattChar -> LOGGER.debug("{} {}", bluetoothGattChar.getUuid(), bluetoothGattChar));
     } catch (RuntimeException e) {
