@@ -3,6 +3,7 @@ package com.github.sem2mqtt.configuration;
 import static java.util.stream.Collectors.joining;
 import static java.util.stream.Collectors.toSet;
 
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;

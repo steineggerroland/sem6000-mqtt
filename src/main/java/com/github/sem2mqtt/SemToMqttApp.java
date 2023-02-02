@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.github.hypfvieh.bluetooth.DeviceManager;
 import com.github.sem2mqtt.bluetooth.BluetoothConnectionManager;
-import com.github.sem2mqtt.configuration.BridgeConfiguration;
-import com.github.sem2mqtt.configuration.BridgeConfigurationLoader;
+import com.github.sem2mqtt.configuration.Configuration;
+import com.github.sem2mqtt.configuration.ConfigurationLoader;
 import com.github.sem2mqtt.configuration.MqttConfig;
 import com.github.sem2mqtt.mqtt.MqttConnection;
 import org.eclipse.paho.client.mqttv3.MqttClient;
@@ -23,16 +23,26 @@ public class SemToMqttApp {
 
   public static void main(String[] args) {
     LOGGER.info("Starting SEM6000 to MQTT bridge.");
-    BridgeConfiguration bridgeConfiguration = loadBridgeConfiguration(args);
+    Configuration configuration = loadBridgeConfiguration(args);
     MqttConnection mqttConnection;
-    MqttConfig mqttConfig = bridgeConfiguration.getMqttConfig();
+    MqttConfig mqttConfig = configuration.getMqttConfig();
     mqttConnection = initializeMqttConnection(mqttConfig);
     Scheduler scheduler = new Scheduler(SchedulerConfig.builder().maxThreads(4).build());
     BluetoothConnectionManager bluetoothConnectionManager = initializeBluetoothConnectionManager();
-    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(mqttConfig.getRootTopic(),
-        bridgeConfiguration.getSemConfigs(), mqttConnection, bluetoothConnectionManager, scheduler);
 
-    semToMqttBridge.run();
+    mqttConnection.establish();
+    bluetoothConnectionManager.init();
+
+    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(mqttConfig.getRootTopic(),
+        configuration.getSemConfigs(), mqttConnection, bluetoothConnectionManager, scheduler);
+    //semToMqttBridge.run();
+
+    configuration.getTimeFlipConfigs().stream()
+        .peek(timeFlipConfiguration -> LOGGER.atDebug()
+            .log(() -> String.format("Found time flip config for %s", timeFlipConfiguration.getMac())))
+        .map(timeFlipConfiguration ->
+            new TimeFlipToMqttBridge(timeFlipConfiguration, bluetoothConnectionManager, scheduler))
+        .forEach(TimeFlipToMqttBridge::run);
   }
 
   private static MqttConnection initializeMqttConnection(MqttConfig mqttConfig) {
@@ -58,16 +68,16 @@ public class SemToMqttApp {
     return bluetoothConnectionManager;
   }
 
-  private static BridgeConfiguration loadBridgeConfiguration(String[] args) {
+  private static Configuration loadBridgeConfiguration(String[] args) {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     mapper.findAndRegisterModules();
-    BridgeConfigurationLoader bridgeConfigurationLoader = new BridgeConfigurationLoader(mapper);
-    BridgeConfiguration bridgeConfiguration;
+    ConfigurationLoader configurationLoader = new ConfigurationLoader(mapper);
+    Configuration configuration;
     if (args.length == 1) {
-      bridgeConfiguration = bridgeConfigurationLoader.load(args[0]);
+      configuration = configurationLoader.load(args[0]);
     } else {
-      bridgeConfiguration = bridgeConfigurationLoader.load();
+      configuration = configurationLoader.load();
     }
-    return bridgeConfiguration;
+    return configuration;
   }
 }

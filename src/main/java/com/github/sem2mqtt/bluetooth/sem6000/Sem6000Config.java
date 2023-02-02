@@ -1,4 +1,4 @@
-package com.github.sem2mqtt.configuration;
+package com.github.sem2mqtt.bluetooth.sem6000;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;

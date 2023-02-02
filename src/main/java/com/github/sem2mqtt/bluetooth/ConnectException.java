@@ -1,4 +1,4 @@
-package com.github.sem2mqtt.bluetooth.sem6000;
+package com.github.sem2mqtt.bluetooth;
 
 public class ConnectException extends Exception {
 

@@ -1,7 +1,10 @@
 package com.github.sem2mqtt.configuration;
 
+import static java.util.Collections.emptySet;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.sem2mqtt.SemToMqttAppException;
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -15,19 +18,19 @@ import java.util.Set;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class BridgeConfigurationLoader {
+public class ConfigurationLoader {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(BridgeConfigurationLoader.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationLoader.class);
   public static final String DEFAULT_PROPERTY_FILENAME = "sem6.properties";
   public static final String DEFAULT_YAML_FILENAME = "sem2mqtt_bridge.yaml";
 
   private final ObjectMapper yamlMapper;
 
-  public BridgeConfigurationLoader(ObjectMapper yamlMapper) {
+  public ConfigurationLoader(ObjectMapper yamlMapper) {
     this.yamlMapper = yamlMapper;
   }
 
-  public BridgeConfiguration load(String configurationFileName) {
+  public Configuration load(String configurationFileName) {
     File file = getClassPathFileFor(configurationFileName);
     failIfFileDoesNotExist(file);
     if (configurationFileName.endsWith(".yaml")) {
@@ -46,7 +49,7 @@ public class BridgeConfigurationLoader {
     }
   }
 
-  public BridgeConfiguration load() {
+  public Configuration load() {
     LOGGER.debug("Scanning for configuration file.");
     File propertiesFile = getClassPathFileFor("./" + DEFAULT_PROPERTY_FILENAME);
     if (propertiesFile.exists()) {
@@ -66,7 +69,7 @@ public class BridgeConfigurationLoader {
             + "'.");
   }
 
-  private BridgeConfiguration loadFromProperties(File propertiesFile) {
+  private Configuration loadFromProperties(File propertiesFile) {
     LOGGER.atInfo().log(() -> String.format("Loading config from '%s'", propertiesFile.getName()));
     InputStream inputStream = null;
     try {
@@ -84,7 +87,7 @@ public class BridgeConfigurationLoader {
       }
 
       LOGGER.info("Successfully loaded properties config.");
-      return new BridgeConfiguration(mqttConfig, semConfigs);
+      return new Configuration(mqttConfig, semConfigs, emptySet());
     } catch (IOException e) {
       failOnReadError(e, propertiesFile.getName());
       throw new SemToMqttAppException("Unable to read properties file", e);
@@ -112,12 +115,12 @@ public class BridgeConfigurationLoader {
     }
   }
 
-  private BridgeConfiguration loadFromYaml(File yamlFile) {
+  private Configuration loadFromYaml(File yamlFile) {
     LOGGER.atInfo().log(() -> String.format("Loading config from '%s'", yamlFile.getName()));
     try {
-      BridgeConfiguration bridgeConfiguration = yamlMapper.readValue(yamlFile, BridgeConfiguration.class);
+      Configuration configuration = yamlMapper.readValue(yamlFile, Configuration.class);
       LOGGER.info("Successfully loaded yaml config.");
-      return bridgeConfiguration;
+      return configuration;
     } catch (IOException e) {
       failOnReadError(e, yamlFile.getName());
       throw new SemToMqttAppException("Unable to read yaml file", e);

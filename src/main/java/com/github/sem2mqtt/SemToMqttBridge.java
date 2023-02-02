@@ -5,9 +5,9 @@ import static java.time.temporal.ChronoUnit.SECONDS;
 
 import com.coreoz.wisp.Scheduler;
 import com.github.sem2mqtt.bluetooth.BluetoothConnectionManager;
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Connection;
 import com.github.sem2mqtt.bluetooth.sem6000.SendingException;
-import com.github.sem2mqtt.configuration.Sem6000Config;
 import com.github.sem2mqtt.mqtt.MqttConnection;
 import com.github.sem2mqtt.mqtt.MqttConnection.MessageCallback;
 import com.github.sem2mqtt.mqtt.Sem6000MqttTopic;
@@ -49,8 +49,6 @@ public class SemToMqttBridge {
 
   public void run() {
     LOGGER.info("Starting bridge service.");
-    mqttConnection.establish();
-    bluetoothConnectionManager.init();
     sem6000Configs.forEach(sem6000Config -> {
       Sem6000Connection sem6000Connection = bluetoothConnectionManager.setupConnection(
           new Sem6000Connection(sem6000Config, bluetoothConnectionManager, scheduler));

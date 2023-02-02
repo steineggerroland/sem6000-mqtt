@@ -1,7 +1,7 @@
 package com.github.sem2mqtt;
 
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import com.github.sem2mqtt.bluetooth.sem6000.SendingException;
-import com.github.sem2mqtt.configuration.Sem6000Config;
 import com.github.sem2mqtt.mqtt.Sem6000MqttTopic;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
 

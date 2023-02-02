@@ -4,20 +4,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import java.time.Duration;
 import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-class BridgeConfigurationLoaderTest {
+class ConfigurationLoaderTest {
 
-  private BridgeConfigurationLoader loader;
+  private ConfigurationLoader loader;
 
   @BeforeEach
   void setUp() {
     ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
     mapper.findAndRegisterModules();
-    loader = new BridgeConfigurationLoader(mapper);
+    loader = new ConfigurationLoader(mapper);
   }
 
   @Test
@@ -54,9 +55,9 @@ class BridgeConfigurationLoaderTest {
   @Test
   void sets_defaults_when_yaml_keys_are_missing() {
     //when
-    BridgeConfiguration bridgeConfiguration = loader.load("minimal.yaml");
-    MqttConfig mqttConfig = bridgeConfiguration.getMqttConfig();
-    Set<Sem6000Config> semConfigs = bridgeConfiguration.getSemConfigs();
+    Configuration configuration = loader.load("minimal.yaml");
+    MqttConfig mqttConfig = configuration.getMqttConfig();
+    Set<Sem6000Config> semConfigs = configuration.getSemConfigs();
     //then
     assertThat(mqttConfig.getRootTopic()).isEqualTo("home");
     assertThat(mqttConfig.getUrl()).isEqualTo("tcp://localhost");
@@ -105,9 +106,9 @@ class BridgeConfigurationLoaderTest {
   @Test
   void sets_defaults_when_properties_are_missing() {
     //when
-    BridgeConfiguration bridgeConfiguration = loader.load("minimal.properties");
-    MqttConfig mqttConfig = bridgeConfiguration.getMqttConfig();
-    Set<Sem6000Config> semConfigs = bridgeConfiguration.getSemConfigs();
+    Configuration configuration = loader.load("minimal.properties");
+    MqttConfig mqttConfig = configuration.getMqttConfig();
+    Set<Sem6000Config> semConfigs = configuration.getSemConfigs();
     //then
     assertThat(mqttConfig.getRootTopic()).isEqualTo("home");
     assertThat(mqttConfig.getUrl()).isEqualTo("tcp://localhost");

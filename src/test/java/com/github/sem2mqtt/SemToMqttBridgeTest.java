@@ -28,10 +28,10 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import com.coreoz.wisp.Scheduler;
 import com.github.sem2mqtt.bluetooth.BluetoothConnectionManager;
+import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Config;
 import com.github.sem2mqtt.bluetooth.sem6000.Sem6000Connection;
 import com.github.sem2mqtt.bluetooth.sem6000.Sem6000DbusHandlerProxy.Sem6000ResponseHandler;
 import com.github.sem2mqtt.bluetooth.sem6000.SendingException;
-import com.github.sem2mqtt.configuration.Sem6000Config;
 import com.github.sem2mqtt.mqtt.MqttConnection;
 import com.github.sem2mqtt.mqtt.MqttConnection.MessageCallback;
 import com.github.sem2mqtt.mqtt.Sem6000MqttTopic;
@@ -54,8 +54,6 @@ import org.magcode.sem6000.connector.send.SwitchCommand;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 @ExtendWith(MockitoExtension.class)
 class SemToMqttBridgeTest {
@@ -82,16 +80,6 @@ class SemToMqttBridgeTest {
     scheduler.gracefullyShutdown();
   }
 
-  @Test
-  void establishes_mqtt_connection_when_running() {
-    //given
-    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, generateSemConfigs(1),
-        mqttConnectionMock, bluetoothConnectionManager, scheduler);
-    //when
-    semToMqttBridge.run();
-    //then
-    verify(mqttConnectionMock).establish();
-  }
 
   @Test
   void subscribes_to_mqtt_setter_of_each_sem6000_when_running() {
@@ -171,18 +159,6 @@ class SemToMqttBridgeTest {
           argThat(bluetoothConnection -> bluetoothConnection.getMacAddress().equals(sem6000Config.getMac())));
     }
     verify(defaultSem6000ConnectionMock, times(countOfSem6000)).establish();
-  }
-
-  @Test
-  @MockitoSettings(strictness = Strictness.LENIENT)
-  void fails_on_mqtt_problems_when_running() {
-    //given
-    SemToMqttBridge semToMqttBridge = new SemToMqttBridge(ROOT_TOPIC, generateSemConfigs(1),
-        mqttConnectionMock, bluetoothConnectionManager, scheduler);
-    //when
-    doThrow(new RuntimeException()).when(mqttConnectionMock).establish();
-    //then
-    assertThatCode(semToMqttBridge::run).isInstanceOf(RuntimeException.class);
   }
 
   @Test
