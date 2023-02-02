@@ -18,7 +18,9 @@
     </encoder>
   </appender>
 
-  <logger name="com.github.sem2mqtt" level="DEBUG"/>
+  <logger name="com.github.sem2mqtt" level="INFO"/>
+  <logger name="com.github.sem2mqtt.TimeFlipToMqttBridge" level="DEBUG"/>
+  <logger name="com.github.sem2mqtt.bluetooth.timeflip" level="DEBUG"/>
   <root level="ERROR">
     <appender-ref ref="Console"/>
     <appender-ref ref="RollingFile"/>
